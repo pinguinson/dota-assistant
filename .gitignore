@@ -1,0 +1,5 @@
+.idea/
+target/
+src/test/
+project/
+/src/main/scala/com/pinguinson/dotaassistant/Main.scala
