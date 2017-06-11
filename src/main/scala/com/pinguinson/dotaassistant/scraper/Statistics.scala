@@ -19,7 +19,8 @@ trait Statistics {
     * Fetch most played heroes
     *
     * @param userId user ID
-    * @return a list which contains most played heroes
+    * @param n number of heroes to return
+    * @return a list which contains n most played heroes
     */
-  def fetchUserMostPlayedHeroes(userId: String): List[UserHeroPerformance]
+  def fetchUserMostPlayedHeroes(userId: String, n: Int): List[UserHeroPerformance]
 }
