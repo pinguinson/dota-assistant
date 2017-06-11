@@ -13,7 +13,7 @@ class DotabuffScraper extends Statistics {
 
   val browser = JsoupBrowser()
 
-  def fetchUserRecentGames(userId: String): UserRecentGames = {
+  def fetchUserRecentGames(userId: String): List[UserGameInfo] = {
     val doc = browser.get(s"https://www.dotabuff.com/players/$userId/matches")
     val entries = doc >> elementList("section > article > table > tbody > tr") >> elementList("td")
     val games = entries.map { columns =>
@@ -25,7 +25,7 @@ class DotabuffScraper extends Statistics {
       val optionalKda = (columns(6) >?> element(".kda-record") >> texts(".value")).map(_.mkString("/"))
       optionalKda.map(kda => UserGameInfo(userId, hero, result, kda))
     }
-    UserRecentGames(userId, games = games.flatten)
+    games.flatten
   }
 
   def fetchUserMostPlayedHeroes(userId: String): List[UserHeroPerformance] = List.empty
