@@ -1,5 +1,6 @@
 package com.pinguinson.dotaassistant.scraper
 
+import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.model.{Results, UserGameInfo, UserHeroPerformance}
 import io.circe._
 import io.circe.generic.auto._
@@ -14,12 +15,6 @@ import scalaj.http._
   */
 class DotaAPI extends StatisticsAsync {
 
-  private val matchHistoryApiEndpoint = "http://api.steampowered.com/IDOTA2Match_570/GetMatchHistory/v1"
-  private val matchDetailsApiEndpoint = "http://api.steampowered.com/IDOTA2Match_570/GetMatchDetails/v1"
-  private val steamApiKey = "226CBA05D5049934B32FBD997D6C537F"
-  private val matchmakingModePublic = 0
-  private val matchmakingModeRanked = 7
-
   case class Match(match_id: Long, lobby_type: Int)
 
   case class Player(account_id: Long, hero_id: Int, kills: Int, deaths: Int, assists: Int) {
@@ -27,15 +22,15 @@ class DotaAPI extends StatisticsAsync {
   }
 
   def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]] = {
-    val json = Http(matchHistoryApiEndpoint).params(Seq(
-      "key" -> steamApiKey,
+    val json = Http(config.endpoints.matchHistory).params(Seq(
+      "key" -> config.apiKey,
       "account_id" -> userId
     )).asString.body
 
     val cursor = parse(json).getOrElse(Json.Null).hcursor
     val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
     val detailsList = matches.filter { m =>
-      m.lobby_type == matchmakingModePublic || m.lobby_type == matchmakingModeRanked
+      config.validLobbyTypes contains m.lobby_type
     } take 10 map { m =>
       getMatchDetails(userId, m.match_id.toString)
     }
@@ -52,8 +47,8 @@ class DotaAPI extends StatisticsAsync {
     */
   def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo] = {
     Future {
-      val json = Http(matchDetailsApiEndpoint).params(Seq(
-        "key" -> steamApiKey,
+      val json = Http(config.endpoints.matchDetails).params(Seq(
+        "key" -> config.apiKey,
         "match_id" -> matchId
       )).asString.body
 
