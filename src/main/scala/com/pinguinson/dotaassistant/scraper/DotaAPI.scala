@@ -26,22 +26,30 @@ class DotaAPI extends StatisticsAsync {
     def kda = s"$kills/$deaths/$assists"
   }
 
-  def fetchUserRecentGames(userId: String): List[Future[UserGameInfo]] = {
+  def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]] = {
     val json = Http(matchHistoryApiEndpoint).params(Seq(
       "key" -> steamApiKey,
       "account_id" -> userId
     )).asString.body
 
-    val doc = parse(json).getOrElse(Json.Null)
-    val cursor = doc.hcursor
+    val cursor = parse(json).getOrElse(Json.Null).hcursor
     val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
-    matches.filter { m =>
+    val detailsList = matches.filter { m =>
       m.lobby_type == matchmakingModePublic || m.lobby_type == matchmakingModeRanked
-    } take 20 map { m =>
+    } take 10 map { m =>
       getMatchDetails(userId, m.match_id.toString)
     }
+    println(s"processed user #$userId")
+    Future.sequence(detailsList)
   }
 
+  /**
+    * Fetch match details
+    *
+    * @param userId user ID
+    * @param matchId match ID
+    * @return a future containing UserGameInfo
+    */
   def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo] = {
     Future {
       val json = Http(matchDetailsApiEndpoint).params(Seq(
@@ -49,8 +57,7 @@ class DotaAPI extends StatisticsAsync {
         "match_id" -> matchId
       )).asString.body
 
-      val doc = parse(json).getOrElse(Json.Null)
-      val cursor = doc.hcursor
+      val cursor = parse(json).getOrElse(Json.Null).hcursor
 
       val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)
       val players = cursor.downField("result").get[List[Player]]("players").getOrElse(List.empty)
@@ -58,14 +65,18 @@ class DotaAPI extends StatisticsAsync {
       val playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
       val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(Player(0, 0, 0, 0, 0))
 
-      val result = if (radiantVictory && playedForRadiant) {
+      val result = if (radiantVictory == playedForRadiant) {
         Results.Victory
       } else {
         Results.Loss
       }
+      println(s"processed user #$userId, match #$matchId")
       UserGameInfo(userId, requiredPlayer.hero_id.toString, result, requiredPlayer.kda)
     }
   }
 
-  def fetchUserMostPlayedHeroes(userId: String, n: Int): List[Future[UserHeroPerformance]] = List.empty
+  // TODO: implement
+  def fetchUserMostPlayedHeroes(userId: String, n: Int): Future[Seq[UserHeroPerformance]] = {
+    Future.successful(List.empty[UserHeroPerformance])
+  }
 }

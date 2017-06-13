@@ -1,5 +1,6 @@
 package com.pinguinson.dotaassistant.scraper
 
+import com.pinguinson.dotaassistant.model.UserGameInfo
 import org.scalatest.FunSuite
 
 import scala.concurrent.{Await, Future}
@@ -36,14 +37,9 @@ class DotaAPITest extends FunSuite {
   }
 
   test("10 players") {
-    val results = tenValidIds.map(dotaApi.fetchUserRecentGames)
-    val r = results.foreach { res =>
-      res.foreach(_.onComplete {
-        case Success(result) => println(result)
-        case Failure(ex) => println(ex)
-      })
-    }
-    assert(results.length == 10)
+    val futureResult = dotaApi.fetchMatchPlayersInfo(tenValidIds)
+    val result = Await.result(futureResult, 10 minutes)
+    assert(result.length == 10)
   }
 
 }
