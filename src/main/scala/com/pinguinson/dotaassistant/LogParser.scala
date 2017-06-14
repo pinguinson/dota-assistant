@@ -1,5 +1,7 @@
 package com.pinguinson.dotaassistant
 
+import java.net.{URI, URL}
+
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
@@ -12,11 +14,11 @@ object LogParser {
     *
     * @param path Path to the log file
     */
-  def getLobbyPlayers(path: String): Option[List[String]] = {
+  def getLobbyPlayers(path: URL): Option[List[String]] = {
 
     def extractPlayerIds(str: String): List[String] = str.split("\\[U:1:").map(_.takeWhile(_ != ']')).slice(1, 11).toList
 
-    val logs: Seq[String] = Try(Source.fromFile(path).getLines.toList.reverse) match {
+    val logs: Seq[String] = Try(Source.fromURL(path).getLines.toList.reverse) match {
       case Success(lines) =>
         lines
       case Failure(ex) =>
