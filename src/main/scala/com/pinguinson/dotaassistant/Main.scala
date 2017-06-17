@@ -3,6 +3,7 @@ package com.pinguinson.dotaassistant
 import java.io.File
 
 import com.pinguinson.dotaassistant.scraper.DotaAPI
+import com.pinguinson.dotaassistant.model.Heroes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
@@ -24,14 +25,15 @@ object Main extends App {
       println("Lobby found, wait...")
       val result = Await.result(api.fetchMatchPlayersInfo(list), 20 seconds)
       result foreach { playerGames =>
-        val groupedResults = playerGames.groupBy(_.hero).mapValues(_.length)
+        val groupedResults = playerGames.groupBy(_.hero).mapValues(_.length).toList.sortBy(-_._2)
         println(s"Player #${playerGames.head.userId}:")
         groupedResults foreach {
-          case (hero, 1) =>
-            println(s"Hero #$hero: 1 game played")
+          case (hero, matches) if matches % 10 == 1 =>
+            println(s"${Heroes(hero)}: $matches game played")
           case (hero, matches) =>
-            println(s"Hero #$hero: $matches game(s) played")
+            println(s"${Heroes(hero)}: $matches games played")
         }
+        println()
       }
   }
 }
