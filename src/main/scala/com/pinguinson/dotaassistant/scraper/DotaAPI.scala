@@ -35,7 +35,7 @@ class DotaAPI extends StatisticsAsync {
       val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
       val detailsList = matches.filter { m =>
         config.validLobbyTypes contains m.lobby_type
-      } take 10 map { m =>
+      } take config.maxRecentGames map { m =>
         getMatchDetails(userId, m.match_id.toString)
       }
       Future.sequence(detailsList)
