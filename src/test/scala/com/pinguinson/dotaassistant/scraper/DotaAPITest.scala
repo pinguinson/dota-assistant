@@ -1,12 +1,10 @@
 package com.pinguinson.dotaassistant.scraper
 
-import com.pinguinson.dotaassistant.model.UserGameInfo
 import org.scalatest.FunSuite
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.Await
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
-import scala.util.{Failure, Success}
 
 /**
   * Created by pinguinson on 6/12/2017.

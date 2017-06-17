@@ -34,7 +34,6 @@ class DotaAPI extends StatisticsAsync {
     } take 10 map { m =>
       getMatchDetails(userId, m.match_id.toString)
     }
-    println(s"processed user #$userId")
     Future.sequence(detailsList)
   }
 
@@ -65,7 +64,6 @@ class DotaAPI extends StatisticsAsync {
       } else {
         Results.Loss
       }
-      println(s"processed user #$userId, match #$matchId")
       UserGameInfo(userId, requiredPlayer.hero_id.toString, result, requiredPlayer.kda)
     }
   }
