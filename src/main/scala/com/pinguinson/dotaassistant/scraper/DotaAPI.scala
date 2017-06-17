@@ -2,13 +2,13 @@ package com.pinguinson.dotaassistant.scraper
 
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.model.{Results, UserGameInfo, UserHeroPerformance}
+import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
-import scalaj.http._
 
 /**
   * Created by pinguinson on 6/11/2017.
@@ -22,35 +22,42 @@ class DotaAPI extends StatisticsAsync {
   }
 
   def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]] = {
-    val json = Http(config.endpoints.matchHistory).params(Seq(
+    val params = Map(
       "key" -> config.apiKey,
       "account_id" -> userId
-    )).asString.body
+    )
 
-    val cursor = parse(json).getOrElse(Json.Null).hcursor
-    val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
-    val detailsList = matches.filter { m =>
-      config.validLobbyTypes contains m.lobby_type
-    } take 10 map { m =>
-      getMatchDetails(userId, m.match_id.toString)
+    val request = url(config.endpoints.matchHistory) <<? params
+
+    Http.default(request) flatMap { response =>
+      val json = response.getResponseBody
+      val cursor = parse(json).getOrElse(Json.Null).hcursor
+      val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
+      val detailsList = matches.filter { m =>
+        config.validLobbyTypes contains m.lobby_type
+      } take 10 map { m =>
+        getMatchDetails(userId, m.match_id.toString)
+      }
+      Future.sequence(detailsList)
     }
-    Future.sequence(detailsList)
   }
 
   /**
     * Fetch match details
     *
-    * @param userId user ID
+    * @param userId  user ID
     * @param matchId match ID
     * @return a future containing UserGameInfo
     */
   def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo] = {
-    Future {
-      val json = Http(config.endpoints.matchDetails).params(Seq(
-        "key" -> config.apiKey,
-        "match_id" -> matchId
-      )).asString.body
+    val params: Map[String, String] = Map(
+      "key" -> config.apiKey,
+      "match_id" -> matchId
+    )
+    val request = url(config.endpoints.matchDetails) <<? params
 
+    Http.default(request) map { response =>
+      val json = response.getResponseBody
       val cursor = parse(json).getOrElse(Json.Null).hcursor
 
       val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)

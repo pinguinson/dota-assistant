@@ -14,6 +14,8 @@ libraryDependencies ++= Seq(
   "org.scalatest" %% "scalatest" % "3.0.1" % "test",
   // http client (might wanna switch to async one)
   "org.scalaj" %% "scalaj-http" % "2.3.0",
+  // async http client
+  "net.databinder.dispatch" %% "dispatch-core" % "0.13.0",
   // configuration
   "com.github.pureconfig" %% "pureconfig" % "0.7.2"
 )
