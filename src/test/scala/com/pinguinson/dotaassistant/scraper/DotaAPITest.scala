@@ -11,7 +11,6 @@ import scala.concurrent.duration._
   */
 class DotaAPITest extends FunSuite {
 
-  val dotaApi = new DotaAPI()
   val validId = "61242572"
   val privateId = "61242573"
   val invalidCharactersId = "abc123"
@@ -31,11 +30,11 @@ class DotaAPITest extends FunSuite {
   )
 
   test("testFetchUserRecentGames") {
-    val result = dotaApi.fetchUserRecentGames(validId)
+    val result = DotaAPI.fetchUserRecentGames(validId)
   }
 
   test("10 players") {
-    val futureResult = dotaApi.fetchMatchPlayersInfo(tenValidIds)
+    val futureResult = DotaAPI.fetchMatchPlayersInfo(tenValidIds)
     val result = Await.result(futureResult, 10 minutes)
     assert(result.length == 10)
   }

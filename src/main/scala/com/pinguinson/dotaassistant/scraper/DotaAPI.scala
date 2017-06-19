@@ -13,7 +13,7 @@ import scala.concurrent.Future
 /**
   * Created by pinguinson on 6/11/2017.
   */
-class DotaAPI extends StatisticsAsync {
+object DotaAPI extends StatisticsAsync {
 
   case class Match(match_id: Long, lobby_type: Int)
 
@@ -50,29 +50,57 @@ class DotaAPI extends StatisticsAsync {
     * @return a future containing UserGameInfo
     */
   def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo] = {
-    val params: Map[String, String] = Map(
-      "key" -> config.apiKey,
-      "match_id" -> matchId
-    )
-    val request = url(config.endpoints.matchDetails) <<? params
 
-    Http.default(request) map { response =>
-      val json = response.getResponseBody
-      val cursor = parse(json).getOrElse(Json.Null).hcursor
-
-      val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)
-      val players = cursor.downField("result").get[List[Player]]("players").getOrElse(List.empty)
-
-      val playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
-      val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(Player(0, 0, 0, 0, 0))
-
-      val result = if (radiantVictory == playedForRadiant) {
-        Results.Victory
+    def getMatchDetailsAux(userId: String, matchId: String, retries: Int, maxRetries: Int): Future[UserGameInfo] = {
+      // TODO: switch to Option/Either
+      if (retries >= maxRetries) {
+        Future.successful(UserGameInfo("", "", Results.Loss, ""))
       } else {
-        Results.Loss
+        getOptionalMatchDetails(userId, matchId) flatMap {
+          case None =>
+            getMatchDetailsAux(userId, matchId, retries + 1, maxRetries)
+          case Some(userGameInfo) =>
+            Future.successful(userGameInfo)
+        }
       }
-      UserGameInfo(userId, requiredPlayer.hero_id.toString, result, requiredPlayer.kda)
     }
+
+    def getOptionalMatchDetails(userId: String, matchId: String): Future[Option[UserGameInfo]] = {
+      val params: Map[String, String] = Map(
+        "key" -> config.apiKey,
+        "match_id" -> matchId
+      )
+      val request = url(config.endpoints.matchDetails) <<? params
+
+      Http.default(request) map { response =>
+        val body = response.getResponseBody
+
+        val optionalJson = parse(body) match {
+          case Left(_) => None
+          case Right(json) => Some(json)
+        }
+
+        optionalJson map { json =>
+          val cursor = json.hcursor
+
+          val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)
+          val players = cursor.downField("result").get[List[Player]]("players").getOrElse(List.empty)
+
+          val playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
+          val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(Player(0, 0, 0, 0, 0))
+
+          val result = if (radiantVictory == playedForRadiant) {
+            Results.Victory
+          } else {
+            Results.Loss
+          }
+          UserGameInfo(userId, requiredPlayer.hero_id.toString, result, requiredPlayer.kda)
+        }
+      }
+    }
+
+    // Retry at most config.maxRetries times
+    getMatchDetailsAux(userId, matchId, 0, config.maxRetries)
   }
 
   // TODO: implement

@@ -16,17 +16,20 @@ object Main extends App {
   val pathString = "C:\\Program Files (x86)\\Steam\\steamapps\\common\\dota 2 beta\\game\\dota\\server_log.txt"
   val path = new File(pathString).toURI.toURL
 
-  val api = new DotaAPI()
-  val players = LogParser.getLobbyPlayers(path)
+    val players = LogParser.getLobbyPlayers(path)
   players match {
     case None =>
       println("No lobby found. Are you sure you provided path to a valid log file?")
     case Some(list) =>
       println("Lobby found, wait...")
-      val result = Await.result(api.fetchMatchPlayersInfo(list), 20 seconds)
+      val result = Await.result(DotaAPI.fetchMatchPlayersInfo(list), 20 seconds)
       result foreach { playerGames =>
         val groupedResults = playerGames.groupBy(_.hero).mapValues(_.length).toList.sortBy(-_._2)
-        println(s"Player #${playerGames.head.userId}:")
+        playerGames.headOption match {
+          case Some(game) => println(s"Player #${game.userId}:")
+          case None => println(s"Anonymous player")
+        }
+//        println(s"Player #${playerGames.head.userId}:")
         groupedResults foreach {
           case (hero, matches) if matches % 10 == 1 =>
             println(s"${Heroes(hero)}: $matches game played")
