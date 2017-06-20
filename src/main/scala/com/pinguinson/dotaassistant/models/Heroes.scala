@@ -1,4 +1,4 @@
-package com.pinguinson.dotaassistant.model
+package com.pinguinson.dotaassistant.models
 
 import io.circe.generic.auto._
 import io.circe.parser._

@@ -1,4 +1,4 @@
-package com.pinguinson.dotaassistant.model
+package com.pinguinson.dotaassistant.models
 
 /**
   * Created by pinguinson on 6/10/2017.

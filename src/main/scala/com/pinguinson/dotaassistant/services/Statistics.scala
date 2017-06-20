@@ -1,6 +1,6 @@
-package com.pinguinson.dotaassistant.scraper
+package com.pinguinson.dotaassistant.services
 
-import com.pinguinson.dotaassistant.model.{UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.{UserGameInfo, UserHeroPerformance}
 
 /**
   * A trait which all scrapers should implement

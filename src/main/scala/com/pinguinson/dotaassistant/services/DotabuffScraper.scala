@@ -1,6 +1,6 @@
-package com.pinguinson.dotaassistant.scraper
+package com.pinguinson.dotaassistant.services
 
-import com.pinguinson.dotaassistant.model._
+import com.pinguinson.dotaassistant.models._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._

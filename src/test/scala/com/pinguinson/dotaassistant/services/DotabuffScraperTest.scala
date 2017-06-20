@@ -1,4 +1,4 @@
-package com.pinguinson.dotaassistant.scraper
+package com.pinguinson.dotaassistant.services
 
 import org.scalatest.{BeforeAndAfterEach, FunSuite}
 

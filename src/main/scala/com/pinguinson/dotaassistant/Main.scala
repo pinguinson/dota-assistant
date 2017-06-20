@@ -2,8 +2,8 @@ package com.pinguinson.dotaassistant
 
 import java.io.File
 
-import com.pinguinson.dotaassistant.scraper.DotaAPI
-import com.pinguinson.dotaassistant.model.Heroes
+import com.pinguinson.dotaassistant.services.DotaAPI
+import com.pinguinson.dotaassistant.models.Heroes
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await

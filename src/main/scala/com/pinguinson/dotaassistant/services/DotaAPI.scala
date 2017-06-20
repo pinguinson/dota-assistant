@@ -1,7 +1,7 @@
-package com.pinguinson.dotaassistant.scraper
+package com.pinguinson.dotaassistant.services
 
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
-import com.pinguinson.dotaassistant.model.{Results, UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.{Results, UserGameInfo, UserHeroPerformance}
 import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._

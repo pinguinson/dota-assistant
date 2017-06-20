@@ -1,6 +1,6 @@
-package com.pinguinson.dotaassistant.model
+package com.pinguinson.dotaassistant.models
 
-import com.pinguinson.dotaassistant.model.Results._
+import com.pinguinson.dotaassistant.models.Results._
 
 /**
   * Created by pinguinson on 6/10/2017.
