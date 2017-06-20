@@ -6,14 +6,20 @@ import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
+import net.ruippeixotog.scalascraper.browser.JsoupBrowser
+import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
+import net.ruippeixotog.scalascraper.dsl.DSL._
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
+import scala.util.Try
 
 /**
   * Created by pinguinson on 6/11/2017.
   */
-object DotaAPI extends StatisticsAsync {
+object DotaAPI extends Statistics {
+
+  private[this] lazy val browser = JsoupBrowser()
 
   case class Match(match_id: Long, lobby_type: Int)
 
@@ -43,7 +49,7 @@ object DotaAPI extends StatisticsAsync {
   }
 
   /**
-    * Fetch match details
+    * Fetch match details from Dota API
     *
     * @param userId  user ID
     * @param matchId match ID
@@ -103,8 +109,18 @@ object DotaAPI extends StatisticsAsync {
     getMatchDetailsAux(userId, matchId, 0, config.maxRetries)
   }
 
-  // TODO: implement
   def fetchUserMostPlayedHeroes(userId: String, n: Int): Future[Seq[UserHeroPerformance]] = {
-    Future.successful(List.empty[UserHeroPerformance])
+    Future {
+      Try {
+        val doc = browser.get(s"https://www.dotabuff.com/players/$userId/heroes")
+        val entries = doc >> elementList("section > article > table > tbody > tr") >> elementList("td")
+        entries.map { columns =>
+          val hero = columns(1) >> text("a")
+          val matches = (columns(2) >> attr("data-value")).toInt
+          val winrate = (columns(3) >> attr("data-value")).toDouble
+          UserHeroPerformance(userId, hero, matches, winrate)
+        }
+      } getOrElse List.empty[UserHeroPerformance] take n
+    }
   }
 }
