@@ -34,7 +34,6 @@ class DotaAPITest extends FunSuite with Matchers {
     val futureResult = DotaAPI.fetchUserRecentGames(validId)
     val result = Await.result(futureResult, 10 minutes)
 
-    all(result.map(_.userId)) shouldBe validId
     result.length should be <= config.maxRecentGames
   }
 
@@ -54,13 +53,13 @@ class DotaAPITest extends FunSuite with Matchers {
     // I'm fairly certain this is not going to change (almost 300 games ahead of a second place)
     val mostPlayed = heroes.head
     mostPlayed.hero shouldBe "Crystal Maiden"
-    mostPlayed.gamesPlayed should be >= 570
+    mostPlayed.matches should be >= 570
 
     // As of 6/20/2017 my 10th most played hero was picked 97 times
     val leastPlayed = heroes.last
-    leastPlayed.gamesPlayed should be >= 97
+    leastPlayed.matches should be >= 97
 
-    atLeast(8, heroes.map(_.gamesPlayed)) should be >= 100
+    atLeast(8, heroes.map(_.matches)) should be >= 100
   }
 
   test("fetchUserMostPlayedHeroes with a private ID should return empty list") {

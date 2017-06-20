@@ -1,7 +1,8 @@
 package com.pinguinson.dotaassistant.services
 
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
-import com.pinguinson.dotaassistant.models.{Results, UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.Players._
+import com.pinguinson.dotaassistant.models.{Heroes, Outcomes, UserGameInfo, UserHeroPerformance}
 import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._
@@ -21,9 +22,9 @@ object DotaAPI extends Statistics {
 
   private[this] lazy val browser = JsoupBrowser()
 
-  case class Match(match_id: Long, lobby_type: Int)
+  private case class MatchField(match_id: Long, lobby_type: Int)
 
-  case class Player(account_id: Long, hero_id: Int, kills: Int, deaths: Int, assists: Int) {
+  private case class PlayerField(account_id: Long, hero_id: Int, kills: Int, deaths: Int, assists: Int) {
     def kda = s"$kills/$deaths/$assists"
   }
 
@@ -38,7 +39,7 @@ object DotaAPI extends Statistics {
     Http.default(request) flatMap { response =>
       val json = response.getResponseBody
       val cursor = parse(json).getOrElse(Json.Null).hcursor
-      val matches = cursor.downField("result").get[List[Match]]("matches").getOrElse(List.empty)
+      val matches = cursor.downField("result").get[List[MatchField]]("matches").getOrElse(List.empty)
       val detailsList = matches.filter { m =>
         config.validLobbyTypes contains m.lobby_type
       } take config.maxRecentGames map { m =>
@@ -60,7 +61,7 @@ object DotaAPI extends Statistics {
     def getMatchDetailsAux(userId: String, matchId: String, retries: Int, maxRetries: Int): Future[UserGameInfo] = {
       // TODO: switch to Option/Either
       if (retries >= maxRetries) {
-        Future.successful(UserGameInfo("", "", Results.Loss, ""))
+        Future.successful(UserGameInfo(UnknownPlayer, "", Outcomes.Loss, ""))
       } else {
         getOptionalMatchDetails(userId, matchId) flatMap {
           case None =>
@@ -90,17 +91,19 @@ object DotaAPI extends Statistics {
           val cursor = json.hcursor
 
           val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)
-          val players = cursor.downField("result").get[List[Player]]("players").getOrElse(List.empty)
+          val players = cursor.downField("result").get[List[PlayerField]]("players").getOrElse(List.empty)
 
           val playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
-          val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(Player(0, 0, 0, 0, 0))
+          val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(PlayerField(0, 0, 0, 0, 0))
 
           val result = if (radiantVictory == playedForRadiant) {
-            Results.Victory
+            Outcomes.Victory
           } else {
-            Results.Loss
+            Outcomes.Loss
           }
-          UserGameInfo(userId, requiredPlayer.hero_id.toString, result, requiredPlayer.kda)
+
+          val heroName = Heroes(requiredPlayer.hero_id)
+          UserGameInfo(IdentifiedPlayer(userId), heroName, result, requiredPlayer.kda)
         }
       }
     }
@@ -118,7 +121,7 @@ object DotaAPI extends Statistics {
           val hero = columns(1) >> text("a")
           val matches = (columns(2) >> attr("data-value")).toInt
           val winrate = (columns(3) >> attr("data-value")).toDouble
-          UserHeroPerformance(userId, hero, matches, winrate)
+          UserHeroPerformance(IdentifiedPlayer(userId), hero, matches, winrate)
         }
       } getOrElse List.empty[UserHeroPerformance] take n
     }

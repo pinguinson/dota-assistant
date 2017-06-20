@@ -2,8 +2,9 @@ package com.pinguinson.dotaassistant
 
 import java.io.File
 
+import com.pinguinson.dotaassistant.models.Players.{IdentifiedPlayer, UnknownPlayer}
 import com.pinguinson.dotaassistant.services.{DotaAPI, LogParser}
-import com.pinguinson.dotaassistant.models.Heroes
+import com.pinguinson.dotaassistant.models.{Heroes, UserGameInfo}
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Await
@@ -26,15 +27,19 @@ object Main extends App {
       result foreach { playerGames =>
         val groupedResults = playerGames.groupBy(_.hero).mapValues(_.length).toList.sortBy(-_._2)
         playerGames.headOption match {
-          case Some(game) => println(s"Player #${game.userId}:")
-          case None => println(s"Anonymous player")
+          case Some(UserGameInfo(IdentifiedPlayer(id), _, _, _)) =>
+            println(s"Player #$id:")
+          case Some(UserGameInfo(UnknownPlayer, _, _, _)) =>
+            println(s"Anonymous player")
+          case None =>
+            println(s"Anonymous player")
         }
-//        println(s"Player #${playerGames.head.userId}:")
+
         groupedResults foreach {
           case (hero, matches) if matches % 10 == 1 =>
-            println(s"${Heroes(hero)}: $matches game played")
+            println(s"$hero: $matches game played")
           case (hero, matches) =>
-            println(s"${Heroes(hero)}: $matches games played")
+            println(s"$hero: $matches games played")
         }
         println()
       }
