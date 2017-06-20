@@ -18,6 +18,7 @@ object DotaApiConfig {
       println(s"No config found: $ex")
       // Maybe should handle this case differently?
       defaultConfig
-    case Right(c) => c.dotaApi
+    case Right(c) =>
+      c.dotaApi
   }
 }
