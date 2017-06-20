@@ -2,7 +2,7 @@ package com.pinguinson.dotaassistant
 
 import java.io.File
 
-import com.pinguinson.dotaassistant.services.DotaAPI
+import com.pinguinson.dotaassistant.services.{DotaAPI, LogParser}
 import com.pinguinson.dotaassistant.models.Heroes
 
 import scala.concurrent.ExecutionContext.Implicits.global

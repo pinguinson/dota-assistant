@@ -1,6 +1,6 @@
-package com.pinguinson.dotaassistant
+package com.pinguinson.dotaassistant.services
 
-import java.net.{URI, URL}
+import java.net.URL
 
 import scala.io.Source
 import scala.util.{Failure, Success, Try}

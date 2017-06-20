@@ -1,6 +1,6 @@
-package com.pinguinson.dotaassistant
+package com.pinguinson.dotaassistant.services
 
-import com.pinguinson.dotaassistant.LogParser.getLobbyPlayers
+import com.pinguinson.dotaassistant.services.LogParser.getLobbyPlayers
 import org.scalatest._
 
 /**
