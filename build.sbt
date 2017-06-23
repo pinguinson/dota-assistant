@@ -27,3 +27,10 @@ libraryDependencies ++= Seq(
   "io.circe" %% "circe-generic",
   "io.circe" %% "circe-parser"
 ).map(_ % circeVersion)
+
+mainClass in assembly := Some("com.pinguinson.dotaassistant.Assistant")
+assemblyJarName in assembly := "assistant.jar"
+assemblyMergeStrategy in assembly := {
+  case PathList("META-INF", _*) => MergeStrategy.discard
+  case _ => MergeStrategy.first
+}
