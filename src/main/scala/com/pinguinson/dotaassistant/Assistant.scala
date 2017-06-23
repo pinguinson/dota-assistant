@@ -62,6 +62,9 @@ object Assistant extends JFXApp {
     scene = mainScene
   }
 
+  stage.getIcons.add(new Image("icons/clockwerk_minimap_icon.png"))
+  stage.setTitle("Dota assistant")
+
   def processButtonClick(): Unit = {
     val path = new File(logPathTextField.getText).toURI.toURL
     LogParser.getLobbyPlayers(path) match {
