@@ -1,6 +1,7 @@
 package com.pinguinson.dotaassistant.services
 
-import com.pinguinson.dotaassistant.models.{UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.Outcomes._
+import com.pinguinson.dotaassistant.models.{HeroPerformance, UserGameInfo, UserHeroPerformance}
 
 import scala.concurrent.{ExecutionContext, Future}
 
@@ -34,6 +35,25 @@ trait Statistics {
     * up to 20 UserGameInfo's
     */
   def fetchMatchPlayersInfo(userIds: Seq[String])(implicit context: ExecutionContext): Future[Seq[Seq[UserGameInfo]]] = {
+    assert(userIds.length == 10)
     Future.sequence(userIds.map(fetchUserRecentGames))
+  }
+
+  def analyzeTeam(playerReports: Seq[Seq[UserGameInfo]]): Seq[HeroPerformance] = {
+    val heroPerformances = playerReports.flatten.groupBy(_.hero).toList.sortBy(-_._2.length)
+    heroPerformances map {
+      case (hero, performances) =>
+        val totalMatches = performances.length
+        val wonMatches = performances.count(_.outcome == Victory)
+        val winrate = wonMatches.toDouble / totalMatches.toDouble
+        HeroPerformance(hero, totalMatches, winrate)
+    }
+  }
+
+  def analyzeTeams(playerReports: Seq[Seq[UserGameInfo]]): (Seq[HeroPerformance], Seq[HeroPerformance]) = {
+    assert(playerReports.length == 10)
+    val radiant = analyzeTeam(playerReports.take(5))
+    val dire    = analyzeTeam(playerReports.takeRight(5))
+    (radiant, dire)
   }
 }

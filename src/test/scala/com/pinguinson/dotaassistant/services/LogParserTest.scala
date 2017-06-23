@@ -9,7 +9,7 @@ import org.scalatest._
 class LogParserTest extends FunSuite with Matchers {
 
   test("getLobbyPlayers with valid log file returns correct list of IDs") {
-    val path = getClass.getResource("/logs/log_valid.txt")
+    val path = getClass.getResource("/logs/log_valid1.txt")
     getLobbyPlayers(path) shouldBe Some(List("295023734", "149929786", "208470653", "88989059", "209875610", "210021266", "61242572", "50862597", "136049358", "86732687"))
   }
 
