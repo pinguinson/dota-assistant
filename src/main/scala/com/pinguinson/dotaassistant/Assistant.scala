@@ -8,7 +8,6 @@ import com.pinguinson.dotaassistant.services._
 import com.pinguinson.dotaassistant.JavaFXExecutionContext.javaFxExecutionContext
 import com.pinguinson.dotaassistant.models.Outcomes.{Loss, Outcome, Victory}
 
-import scala.collection.immutable
 import scalafx.Includes._
 import scalafx.application.{JFXApp, Platform}
 import scalafx.application.JFXApp.PrimaryStage
@@ -26,10 +25,19 @@ object Assistant extends JFXApp {
   val logPathTextField = new TextField()
   logPathTextField.setPrefWidth(720)
 
+  val apiKeyTextField = new TextField()
+  apiKeyTextField.setPrefWidth(720)
+
   val buttonParse = new Button("Parse last match")
   buttonParse.setOnAction(handle(processButtonClick()))
 
-  val textFieldAndButton = new HBox(logPathTextField, buttonParse)
+  val textFields = new VBox(
+    new Label("Path to server_log.txt"),
+    logPathTextField,
+    new Label("Your Steam API key"),
+    apiKeyTextField)
+  textFields.setSpacing(5)
+  val textFieldAndButton = new VBox(textFields, buttonParse)
   textFieldAndButton.setSpacing(10)
 
   val radiantBlock = new VBox()
@@ -51,8 +59,6 @@ object Assistant extends JFXApp {
     content = mainBlock
   }
 
-//  mainScene.fill = Color.DimGray
-
   mainBlock.setPadding(defaultPadding)
   mainBlock.setSpacing(10)
 
@@ -73,11 +79,12 @@ object Assistant extends JFXApp {
 
   def processButtonClick(): Unit = {
     val path = new File(logPathTextField.getText).toURI.toURL
+    val apiKey = apiKeyTextField.getText
     LogParser.getLobbyPlayers(path) match {
       case None =>
         suggestions.setText("Failed to parse logs")
       case Some(players) =>
-        DotaAPI.fetchMatchPlayersInfo(players) map { playerReports =>
+        new DotaAPI(apiKey).fetchMatchPlayersInfo(players) map { playerReports =>
           val grids = playerReports map buildIconGrid
           val radiantGrid = grids.take(5)
           val direGrid = grids.drop(5)

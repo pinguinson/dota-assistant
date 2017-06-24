@@ -17,6 +17,8 @@ class DotaAPITest extends FunSuite with Matchers {
   val invalidCharactersId = "abc123"
   val nonexistentId = "99999999999999"
 
+  val api = new DotaAPI(config.apiKey)
+
   val tenValidIds = Seq(
     "169672678",
     "116889906",
@@ -31,21 +33,21 @@ class DotaAPITest extends FunSuite with Matchers {
   )
 
   test("testFetchUserRecentGames") {
-    val futureResult = DotaAPI.fetchUserRecentGames(validId)
+    val futureResult = api.fetchUserRecentGames(validId)
     val result = Await.result(futureResult, 10 minutes)
 
     result.length should be <= config.maxRecentGames
   }
 
   test("10 players") {
-    val futureResult = DotaAPI.fetchMatchPlayersInfo(tenValidIds)
+    val futureResult = api.fetchMatchPlayersInfo(tenValidIds)
     val result = Await.result(futureResult, 10 minutes)
 
     result should have length 10
   }
 
   test("fetchUserMostPlayedHeroes with a valid ID should return proper result") {
-    val futureResult = DotaAPI.fetchUserMostPlayedHeroes(validId, 10)
+    val futureResult = api.fetchUserMostPlayedHeroes(validId, 10)
     val heroes = Await.result(futureResult, 5 seconds)
 
     heroes should have length 10
@@ -63,13 +65,13 @@ class DotaAPITest extends FunSuite with Matchers {
   }
 
   test("fetchUserMostPlayedHeroes with a private ID should return empty list") {
-    val futureResult = DotaAPI.fetchUserMostPlayedHeroes(privateId, 10)
+    val futureResult = api.fetchUserMostPlayedHeroes(privateId, 10)
     val result = Await.result(futureResult, 5 seconds)
     result shouldBe empty
   }
 
   test("fetchUserMostPlayedHeroes with an invalid ID should return empty list") {
-    val futureResult = DotaAPI.fetchUserMostPlayedHeroes(invalidCharactersId, 10)
+    val futureResult = api.fetchUserMostPlayedHeroes(invalidCharactersId, 10)
     val result = Await.result(futureResult, 5 seconds)
     result shouldBe empty
   }

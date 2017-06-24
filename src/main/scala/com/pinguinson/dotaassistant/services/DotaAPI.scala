@@ -18,7 +18,7 @@ import scala.util.Try
 /**
   * Created by pinguinson on 6/11/2017.
   */
-object DotaAPI extends Statistics {
+class DotaAPI(apiKey: String) extends Statistics {
 
   private[this] lazy val browser = JsoupBrowser()
 
@@ -30,7 +30,7 @@ object DotaAPI extends Statistics {
 
   def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]] = {
     val params = Map(
-      "key" -> config.apiKey,
+      "key" -> apiKey,
       "account_id" -> userId
     )
 
@@ -74,7 +74,7 @@ object DotaAPI extends Statistics {
 
     def getOptionalMatchDetails(userId: String, matchId: String): Future[Option[UserGameInfo]] = {
       val params: Map[String, String] = Map(
-        "key" -> config.apiKey,
+        "key" -> apiKey,
         "match_id" -> matchId
       )
       val request = url(config.endpoints.matchDetails) <<? params
