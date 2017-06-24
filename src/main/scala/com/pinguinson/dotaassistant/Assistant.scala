@@ -23,10 +23,10 @@ object Assistant extends JFXApp {
   val defaultPadding = Insets(10, 10, 10, 10)
 
   val logPathTextField = new TextField()
-  logPathTextField.setPrefWidth(720)
+  logPathTextField.setPrefWidth(650)
 
   val apiKeyTextField = new TextField()
-  apiKeyTextField.setPrefWidth(720)
+  apiKeyTextField.setPrefWidth(650)
 
   val buttonParse = new Button("Parse last match")
   buttonParse.setOnAction(handle(processButtonClick()))
@@ -63,8 +63,8 @@ object Assistant extends JFXApp {
   mainBlock.setSpacing(10)
 
   stage = new PrimaryStage {
-    width = 1280
-    height = 720
+    width = 690
+    height = 630
     scene = mainScene
   }
 
