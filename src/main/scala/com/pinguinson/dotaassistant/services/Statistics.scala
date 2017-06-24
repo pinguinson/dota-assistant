@@ -19,6 +19,15 @@ trait Statistics {
   def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]]
 
   /**
+    * Fetch match details from Dota API
+    *
+    * @param userId  user ID
+    * @param matchId match ID
+    * @return a future containing UserGameInfo
+    */
+  def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo]
+
+  /**
     * Fetch most played heroes
     *
     * @param userId user ID

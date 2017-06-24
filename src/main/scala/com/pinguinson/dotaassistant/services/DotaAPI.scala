@@ -82,10 +82,7 @@ class DotaAPI(apiKey: String) extends Statistics {
       Http.default(request) map { response =>
         val body = response.getResponseBody
 
-        val optionalJson = parse(body) match {
-          case Left(_) => None
-          case Right(json) => Some(json)
-        }
+        val optionalJson = parse(body).toOption
 
         optionalJson map { json =>
           val cursor = json.hcursor
