@@ -10,7 +10,7 @@ import com.pinguinson.dotaassistant.models.Outcomes.{Loss, Outcome, Victory}
 
 import scala.collection.immutable
 import scalafx.Includes._
-import scalafx.application.JFXApp
+import scalafx.application.{JFXApp, Platform}
 import scalafx.application.JFXApp.PrimaryStage
 import scalafx.scene.Scene
 import scalafx.scene.control._
@@ -64,6 +64,12 @@ object Assistant extends JFXApp {
 
   stage.getIcons.add(new Image("icons/clockwerk_minimap_icon.png"))
   stage.setTitle("Dota assistant")
+
+  // stop program on window close
+  stage.setOnCloseRequest(handle {
+    Platform.exit()
+    System.exit(1)
+  })
 
   def processButtonClick(): Unit = {
     val path = new File(logPathTextField.getText).toURI.toURL
