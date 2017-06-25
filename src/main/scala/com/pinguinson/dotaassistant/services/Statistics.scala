@@ -1,5 +1,8 @@
 package com.pinguinson.dotaassistant.services
 
+import cats._
+import cats.data._
+import cats.implicits._
 import com.pinguinson.dotaassistant.models.Outcomes._
 import com.pinguinson.dotaassistant.models.{HeroPerformance, UserGameInfo, UserHeroPerformance}
 
@@ -16,7 +19,7 @@ trait Statistics {
     * @param userId user ID
     * @return a future containing recent games
     */
-  def fetchUserRecentGames(userId: String): Future[Seq[UserGameInfo]]
+  def fetchUserRecentGames(userId: String): FutureEither[List[UserGameInfo]]
 
   /**
     * Fetch match details from Dota API
@@ -25,7 +28,7 @@ trait Statistics {
     * @param matchId match ID
     * @return a future containing UserGameInfo
     */
-  def getMatchDetails(userId: String, matchId: String): Future[UserGameInfo]
+  def getMatchDetails(userId: String, matchId: String): FutureEither[UserGameInfo]
 
   /**
     * Fetch most played heroes
@@ -34,7 +37,7 @@ trait Statistics {
     * @param n number of heroes to return
     * @return a future containing n most played heroes
     */
-  def fetchUserMostPlayedHeroes(userId: String, n: Int): Future[Seq[UserHeroPerformance]]
+  def fetchUserMostPlayedHeroes(userId: String, n: Int): FutureEither[List[UserHeroPerformance]]
 
   /**
     * Fetch information about 10 players in a match
@@ -43,12 +46,13 @@ trait Statistics {
     * @return a future containing sequence of length 10 (one per player), each containing another sequence of
     * up to 20 UserGameInfo's
     */
-  def fetchMatchPlayersInfo(userIds: Seq[String])(implicit context: ExecutionContext): Future[Seq[Seq[UserGameInfo]]] = {
+  def fetchMatchPlayersInfo(userIds: List[String])(implicit context: ExecutionContext): List[FutureEither[List[UserGameInfo]]] = {
     assert(userIds.length == 10)
-    Future.sequence(userIds.map(fetchUserRecentGames))
+    val x: List[FutureEither[List[UserGameInfo]]] = userIds.map(fetchUserRecentGames)
+    x
   }
 
-  def analyzeTeam(playerReports: Seq[Seq[UserGameInfo]]): Seq[HeroPerformance] = {
+  def analyzeTeam(playerReports: List[List[UserGameInfo]]): List[HeroPerformance] = {
     val heroPerformances = playerReports.flatten.groupBy(_.hero).toList.sortBy(-_._2.length)
     heroPerformances map {
       case (hero, performances) =>
@@ -59,10 +63,11 @@ trait Statistics {
     }
   }
 
-  def analyzeTeams(playerReports: Seq[Seq[UserGameInfo]]): (Seq[HeroPerformance], Seq[HeroPerformance]) = {
+  def analyzeTeams(playerReports: List[List[UserGameInfo]]): (List[HeroPerformance], List[HeroPerformance]) = {
     assert(playerReports.length == 10)
-    val radiant = analyzeTeam(playerReports.take(5))
-    val dire    = analyzeTeam(playerReports.takeRight(5))
-    (radiant, dire)
+    val (radiant, dire) = playerReports.splitAt(5)
+    val radiantAnalysis = analyzeTeam(radiant)
+    val direAnalysis = analyzeTeam(dire)
+    (radiantAnalysis, direAnalysis)
   }
 }

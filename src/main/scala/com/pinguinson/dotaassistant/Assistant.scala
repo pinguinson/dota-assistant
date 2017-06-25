@@ -2,6 +2,7 @@ package com.pinguinson.dotaassistant
 
 import java.io.File
 
+import cats.implicits._
 import com.pinguinson.dotaassistant.models._
 import com.pinguinson.dotaassistant.models.Players._
 import com.pinguinson.dotaassistant.services._
@@ -11,7 +12,7 @@ import com.pinguinson.dotaassistant.models.Outcomes.{Loss, Outcome, Victory}
 import scalafx.Includes._
 import scalafx.application.{JFXApp, Platform}
 import scalafx.application.JFXApp.PrimaryStage
-import scalafx.scene.Scene
+import scalafx.scene.{Scene, Node}
 import scalafx.scene.control._
 import scalafx.scene.image._
 import scalafx.scene.layout._
@@ -84,13 +85,27 @@ object Assistant extends JFXApp {
       case None =>
         suggestions.setText("Failed to parse logs")
       case Some(players) =>
-        new DotaAPI(apiKey).fetchMatchPlayersInfo(players) map { playerReports =>
-          val grids = playerReports map buildIconGrid
-          val radiantGrid = grids.take(5)
-          val direGrid = grids.drop(5)
-          radiantBlock.children = radiantGrid
-          direBlock.children = direGrid
-        }
+        val (radiantReports, direReports) = new DotaAPI(apiKey).fetchMatchPlayersInfo(players).splitAt(5)
+        // remove previous children
+        radiantBlock.children = List.empty[Node]
+        direBlock.children = List.empty[Node]
+
+        radiantReports.map(_.bimap(
+          { error =>
+            radiantBlock.children.add(new Label(error.toString))
+          },
+          { playerMatches =>
+            radiantBlock.children.add(buildIconGrid(playerMatches))
+          }
+        ))
+        direReports.map(_.bimap(
+          { error =>
+            direBlock.children.add(new Label(error.toString))
+          },
+          { playerMatches =>
+            direBlock.children.add(buildIconGrid(playerMatches))
+          }
+        ))
     }
   }
 
