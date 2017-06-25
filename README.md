@@ -4,6 +4,10 @@
 
 ![Screenshot](screenshot.png)
 
+## Download
+
+You can download from [releases](https://github.com/pinguinson/dota-assistant/releases)
+
 ## How to use
 
 Enter path to your Dota 2 server log, default path on Windows is:
