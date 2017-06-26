@@ -53,6 +53,11 @@ trait Statistics {
     x
   }
 
+  /**
+    * Get team's performance on heroes they pick
+    * @param playerReports list with players' `UserGameInfo`s
+    * @return a list of [[HeroPerformance]], one entry per picked hero
+    */
   def analyzeTeam(playerReports: List[List[UserGameInfo]]): List[HeroPerformance] = {
     val heroPerformances = playerReports.flatten.groupBy(_.hero).toList.sortBy(-_._2.length)
     heroPerformances map {
@@ -64,6 +69,11 @@ trait Statistics {
     }
   }
 
+  /**
+    * Get teams' performances on heroes they pick
+    * @param playerReports list with players' `UserGameInfo`s
+    * @return a tuple of two lists (radiant and dire) of `HeroPerformance`s, one entry per picked hero
+    */
   def analyzeTeams(playerReports: List[List[UserGameInfo]]): (List[HeroPerformance], List[HeroPerformance]) = {
     assert(playerReports.length == 10)
     val (radiant, dire) = playerReports.splitAt(5)
