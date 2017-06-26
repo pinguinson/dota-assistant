@@ -6,7 +6,8 @@ import cats.implicits._
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.models.Exceptions._
 import com.pinguinson.dotaassistant.models.Players._
-import com.pinguinson.dotaassistant.models.{Heroes, Outcomes, UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.UserReports._
+import com.pinguinson.dotaassistant.models.Outcomes
 import dispatch.{Http, url}
 import io.circe.{HCursor, Json, Printer}
 import io.circe.generic.auto._
@@ -141,7 +142,7 @@ class DotaAPI(apiKey: String) extends Statistics {
             Outcomes.Loss
           }
 
-          val heroName = Heroes(requiredPlayer.hero_id)
+          val heroName = HeroService.getName(requiredPlayer.hero_id)
           UserGameInfo(IdentifiedPlayer(userId), heroName, result, requiredPlayer.kda)
         }
     }

@@ -4,7 +4,8 @@ import cats._
 import cats.data._
 import cats.implicits._
 import com.pinguinson.dotaassistant.models.Outcomes._
-import com.pinguinson.dotaassistant.models.{HeroPerformance, UserGameInfo, UserHeroPerformance}
+import com.pinguinson.dotaassistant.models.UserReports._
+import com.pinguinson.dotaassistant.models.HeroPerformance
 
 import scala.concurrent.{ExecutionContext, Future}
 
