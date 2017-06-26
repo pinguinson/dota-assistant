@@ -8,6 +8,8 @@ object Exceptions {
   case object AccessForbiddenException extends DotaApiException
   case object TooManyRequestsException extends DotaApiException
   case object PrivateProfileException extends DotaApiException
-  case class UnknownException(responseString: String) extends DotaApiException
   case object MatchNotFound extends DotaApiException
+
+  case class UnknownException(responseString: String) extends DotaApiException
+  case class ParsingException(e: String) extends DotaApiException
 }

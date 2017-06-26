@@ -9,12 +9,13 @@ import com.pinguinson.dotaassistant.models.Players._
 import com.pinguinson.dotaassistant.models.UserReports._
 import com.pinguinson.dotaassistant.models.Outcomes
 import dispatch.{Http, url}
-import io.circe.{HCursor, Json, Printer}
+import io.circe.{DecodingFailure, HCursor, Json, Printer}
 import io.circe.generic.auto._
 import io.circe.parser._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
 import net.ruippeixotog.scalascraper.dsl.DSL.Extract._
 import net.ruippeixotog.scalascraper.dsl.DSL._
+import net.ruippeixotog.scalascraper.model.Element
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.{ExecutionContext, Future}
@@ -93,22 +94,25 @@ class DotaAPI(apiKey: String) extends Statistics {
   }
 
   def fetchUserRecentGames(userId: String): FutureEither[List[UserGameInfo]] = {
+
+    def parseUserRecentGames(cursor: HCursor): FutureEither[List[UserGameInfo]] = {
+      val matches = cursor.downField("result").get[List[MatchField]]("matches").getOrElse(List.empty)
+      val detailsList = matches.filter { m =>
+        config.validLobbyTypes contains m.lobby_type
+      } take config.maxRecentGames map { m =>
+        getMatchDetails(userId, m.match_id.toString)
+      }
+      detailsList.sequenceU
+    }
+
     val params = Map(
       "key" -> apiKey,
       "account_id" -> userId
     )
 
     getApiResponse(config.endpoints.matchHistory, params)
-      .subflatMap(s => processResponseHistory(s))
-      .flatMap { cursor =>
-        val matches = cursor.downField("result").get[List[MatchField]]("matches").getOrElse(List.empty)
-        val detailsList = matches.filter { m =>
-          config.validLobbyTypes contains m.lobby_type
-        } take config.maxRecentGames map { m =>
-          getMatchDetails(userId, m.match_id.toString)
-        }
-        detailsList.sequenceU
-      }
+      .subflatMap(body => processResponseHistory(body))
+      .flatMap(cursor => parseUserRecentGames(cursor))
   }
 
   def getMatchDetails(userId: String, matchId: String): FutureEither[UserGameInfo] = {
@@ -128,23 +132,28 @@ class DotaAPI(apiKey: String) extends Statistics {
       )
 
       getApiResponse(config.endpoints.matchDetails, params)
-        .subflatMap(s => processResponseMatchDetails(s))
-        .map { cursor =>
-          val radiantVictory = cursor.downField("result").get[Boolean]("radiant_win").getOrElse(true)
-          val players = cursor.downField("result").get[List[PlayerField]]("players").getOrElse(List.empty)
+        .subflatMap(body => processResponseMatchDetails(body))
+        .subflatMap(cursor => parseUserGameInfo(cursor))
+    }
 
-          val playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
-          val requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(PlayerField(0, 0, 0, 0, 0))
+    def parseUserGameInfo(cursor: HCursor): Either[ParsingException, UserGameInfo] = {
+      val parsed = for {
+        radiantVictory <- cursor.downField("result").get[Boolean]("radiant_win")
+        players <- cursor.downField("result").get[List[PlayerField]]("players")
 
-          val result = if (radiantVictory == playedForRadiant) {
-            Outcomes.Victory
-          } else {
-            Outcomes.Loss
-          }
+        playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
+        requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(PlayerField(0, 0, 0, 0, 0))
+        heroName = HeroService.getName(requiredPlayer.hero_id)
 
-          val heroName = HeroService.getName(requiredPlayer.hero_id)
-          UserGameInfo(IdentifiedPlayer(userId), heroName, result, requiredPlayer.kda)
+        result = if (radiantVictory == playedForRadiant) {
+          Outcomes.Victory
+        } else {
+          Outcomes.Loss
         }
+      } yield UserGameInfo(IdentifiedPlayer(userId), heroName, result, requiredPlayer.kda)
+      parsed.left.map {
+        case DecodingFailure(msg, _) => ParsingException(msg)
+      }
     }
 
     // Try at most config.maxRetries times
@@ -153,18 +162,20 @@ class DotaAPI(apiKey: String) extends Statistics {
 
   def fetchUserMostPlayedHeroes(userId: String, n: Int): FutureEither[List[UserHeroPerformance]] = {
     //TODO: handle errors
-//    val f = Future {
-//      Try {
-//        val doc = browser.get(s"https://www.dotabuff.com/players/$userId/heroes")
+    val f: Future[Either[Throwable, List[UserHeroPerformance]]] = Future {
+      Try {
+        val doc = browser.get(s"https://www.dotabuff.com/players/$userId/heroes")
 //        val entries = doc >> elementList("section > article > table > tbody > tr") >> elementList("td")
-//        entries.map { columns =>
-//          val hero = columns(1) >> text("a")
-//          val matches = (columns(2) >> attr("data-value")).toInt
-//          val winrate = (columns(3) >> attr("data-value")).toDouble
-//          UserHeroPerformance(IdentifiedPlayer(userId), hero, matches, winrate)
-//        }
-//      } getOrElse List.empty[UserHeroPerformance] take n
-//    }
-    EitherT.right(Future.successful(List.empty[UserHeroPerformance]))
+        val rows: List[Element] = doc >> elementList("section > article > table > tbody > tr")
+        val entries: List[List[Element]] = rows.map(_ >> elementList("td"))
+        entries.map { columns =>
+          val hero = columns(1) >> text("a")
+          val matches = (columns(2) >> attr("data-value")).toInt
+          val winrate = (columns(3) >> attr("data-value")).toDouble
+          UserHeroPerformance(IdentifiedPlayer(userId), hero, matches, winrate)
+        } take n
+      }.toEither
+    }
+    EitherT(f).leftMap(e => UnknownException(e.getMessage))
   }
 }
