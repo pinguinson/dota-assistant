@@ -1,16 +1,13 @@
 package com.pinguinson.dotaassistant.services
 
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
-import org.scalatest.{FunSuite, Matchers}
-
-import scala.concurrent.Await
-import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.duration._
+import com.pinguinson.dotaassistant.models.Exceptions._
+import org.scalatest._
 
 /**
   * Created by pinguinson on 6/12/2017.
   */
-class DotaAPITest extends FunSuite with Matchers {
+class DotaAPITest extends AsyncFunSuite with Matchers with EitherValues {
 
   val validId = "61242572"
   val privateId = "61242573"
@@ -19,7 +16,7 @@ class DotaAPITest extends FunSuite with Matchers {
 
   val api = new DotaAPI(config.apiKey)
 
-  val tenValidIds = Seq(
+  val tenValidIds = List(
     "169672678",
     "116889906",
     "61242572",
@@ -33,46 +30,39 @@ class DotaAPITest extends FunSuite with Matchers {
   )
 
   test("testFetchUserRecentGames") {
-    val futureResult = api.fetchUserRecentGames(validId)
-    val result = Await.result(futureResult, 10 minutes)
-
-    result.length should be <= config.maxRecentGames
-  }
-
-  test("10 players") {
-    val futureResult = api.fetchMatchPlayersInfo(tenValidIds)
-    val result = Await.result(futureResult, 10 minutes)
-
-    result should have length 10
+    api.fetchUserRecentGames(validId).value.map { either =>
+      either.right.value.length should be <= config.maxRecentGames
+    }
   }
 
   test("fetchUserMostPlayedHeroes with a valid ID should return proper result") {
-    val futureResult = api.fetchUserMostPlayedHeroes(validId, 10)
-    val heroes = Await.result(futureResult, 5 seconds)
+    api.fetchUserMostPlayedHeroes(validId, 10).value.map { either =>
+      val heroes = either.right.value
 
-    heroes should have length 10
+      heroes should have length 10
 
-    // I'm fairly certain this is not going to change (almost 300 games ahead of a second place)
-    val mostPlayed = heroes.head
-    mostPlayed.hero shouldBe "Crystal Maiden"
-    mostPlayed.matches should be >= 570
+      // I'm fairly certain this is not going to change (almost 300 games ahead of a second place)
+      val mostPlayed = heroes.head
+      mostPlayed.hero shouldBe "Crystal Maiden"
+      mostPlayed.matches should be >= 570
 
-    // As of 6/20/2017 my 10th most played hero was picked 97 times
-    val leastPlayed = heroes.last
-    leastPlayed.matches should be >= 97
+      // As of 6/20/2017 my 10th most played hero was picked 97 times
+      val leastPlayed = heroes.last
+      leastPlayed.matches should be >= 97
 
-    atLeast(8, heroes.map(_.matches)) should be >= 100
+      atLeast(8, heroes.map(_.matches)) should be >= 100
+    }
   }
 
   test("fetchUserMostPlayedHeroes with a private ID should return empty list") {
-    val futureResult = api.fetchUserMostPlayedHeroes(privateId, 10)
-    val result = Await.result(futureResult, 5 seconds)
-    result shouldBe empty
+    api.fetchUserMostPlayedHeroes(privateId, 10).value.map { either =>
+      either.left.value shouldBe a [UnknownException]
+    }
   }
 
   test("fetchUserMostPlayedHeroes with an invalid ID should return empty list") {
-    val futureResult = api.fetchUserMostPlayedHeroes(invalidCharactersId, 10)
-    val result = Await.result(futureResult, 5 seconds)
-    result shouldBe empty
+    api.fetchUserMostPlayedHeroes(invalidCharactersId, 10).value.map { either =>
+      either.left.value shouldBe a [UnknownException]
+    }
   }
 }
