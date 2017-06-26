@@ -8,7 +8,7 @@ import scala.io.Source
 /**
   * Created by pinguinson on 6/18/2017.
   */
-object Heroes {
+object HeroService {
 
   case class Hero(id: Int, name: String)
   case class HeroesMap(heroes: List[Hero])
@@ -26,14 +26,7 @@ object Heroes {
     * @param id hero ID
     * @return hero name
     */
-  def apply(id: Int): String = heroesMap(id)
-
-  /**
-    * Get hero name by hero ID
-    * @param id hero ID
-    * @return hero name
-    */
-  def apply(id: String): String = heroesMap(id.toInt)
+  def getName(id: Int): String = heroesMap(id)
 
   /**
     * Get path to the hero icon
