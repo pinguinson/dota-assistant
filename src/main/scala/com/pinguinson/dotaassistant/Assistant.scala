@@ -4,6 +4,7 @@ import java.io.File
 
 import cats.implicits._
 import com.pinguinson.dotaassistant.models._
+import com.pinguinson.dotaassistant.models.UserReports._
 import com.pinguinson.dotaassistant.models.Players._
 import com.pinguinson.dotaassistant.services._
 import com.pinguinson.dotaassistant.JavaFXExecutionContext.javaFxExecutionContext
@@ -92,18 +93,18 @@ object Assistant extends JFXApp {
 
         radiantReports.map(_.bimap(
           { error =>
-            radiantBlock.children.add(new Label(error.toString))
+            radiantBlock.children.add(buildIconGrid(Either.left(error)))
           },
           { playerMatches =>
-            radiantBlock.children.add(buildIconGrid(playerMatches))
+            radiantBlock.children.add(buildIconGrid(Either.right(playerMatches)))
           }
         ))
         direReports.map(_.bimap(
           { error =>
-            direBlock.children.add(new Label(error.toString))
+            direBlock.children.add(buildIconGrid(Either.left(error)))
           },
           { playerMatches =>
-            direBlock.children.add(buildIconGrid(playerMatches))
+            direBlock.children.add(buildIconGrid(Either.right(playerMatches)))
           }
         ))
     }
@@ -117,14 +118,14 @@ object Assistant extends JFXApp {
     new Label(text)
   }
 
-  def buildIconGrid(games: Seq[UserGameInfo]): VBox = {
+  def buildIconGrid(e: Either[ApiError, List[UserGameInfo]]): VBox = {
 
-    def buildImageViewForGame(hero: String, outcome: Outcome) = {
-      val iconPath = Heroes.getMinimapIcon(hero)
-      val view = new ImageView(new Image(iconPath))
-      val bgColor = outcome match {
-        case Victory => Color.DarkSeaGreen
-        case Loss => Color.LightCoral
+    def buildImageViewForGame(optionalGame: Option[UserGameInfo]) = {
+      val icon = HeroService.getMinimapIcon(optionalGame.map(_.hero))
+      val view = new ImageView(new Image(icon))
+      val bgColor = optionalGame.map(_.outcome) match {
+        case Some(Victory) => Color.DarkSeaGreen
+        case _ => Color.LightCoral
       }
       val fill = new BackgroundFill(
         bgColor,
@@ -136,23 +137,21 @@ object Assistant extends JFXApp {
       box
     }
 
-    def buildImageViewsForUnknownPlayer() = {
-      (1 to 20) map { _ =>
-        buildImageViewForGame("", Loss)
-      }
+    val labelText = e.map(_.head.player) match {
+      case Left(error) =>
+        error.toString
+      case Right(IdentifiedPlayer(id)) =>
+        s"Player #$id"
+      case Right(UnknownPlayer) =>
+        s"Unknown player"
     }
-
-    val label = games.headOption.map(_.player) match {
-      case Some(IdentifiedPlayer(id)) =>
-        new Label(s"Player #$id")
-      case _ =>
-        new Label(s"Unknown player")
+    val views = e match {
+      case Left(error) =>
+        (1 to 20).map(_ => None).map(buildImageViewForGame)
+      case Right(userGameInfos) =>
+        userGameInfos.map(Some(_)).map(buildImageViewForGame)
     }
-
-    val views = games.headOption match {
-      case Some(_) => games.map(g => buildImageViewForGame(g.hero, g.outcome))
-      case None => buildImageViewsForUnknownPlayer()
-    }
+    val label = new Label(labelText)
     val row1 = new HBox {
       children = views.take(10)
     }
