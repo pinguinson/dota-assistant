@@ -18,16 +18,9 @@ object LogParser {
 
     def extractPlayerIds(str: String): List[String] = str.split("\\[U:1:").map(_.takeWhile(_ != ']')).slice(1, 11).toList
 
-    val logs: Seq[String] = Try(Source.fromURL(path).getLines.toList.reverse) match {
-      case Success(lines) =>
-        lines
-      case Failure(ex) =>
-        // file was not found
-        println(ex)
-        List.empty[String]
-    }
-    val lastKnownLobby = logs.find(_.contains("Lobby"))
-
-    lastKnownLobby.map(extractPlayerIds)
+    for {
+      logs <- Try(Source.fromURL(path).getLines.toList.reverse).toOption
+      logLine <- logs.find(_.contains("Lobby"))
+    } yield extractPlayerIds(logLine)
   }
 }
