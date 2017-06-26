@@ -1,6 +1,4 @@
-package com.pinguinson.dotaassistant.models
-
-import java.net.URL
+package com.pinguinson.dotaassistant.services
 
 import io.circe.generic.auto._
 import io.circe.parser._
@@ -23,19 +21,31 @@ object Heroes {
       Map.empty[Int, String].withDefaultValue("<unknown>")
   }
 
+  /**
+    * Get hero name by hero ID
+    * @param id hero ID
+    * @return hero name
+    */
   def apply(id: Int): String = heroesMap(id)
+
+  /**
+    * Get hero name by hero ID
+    * @param id hero ID
+    * @return hero name
+    */
   def apply(id: String): String = heroesMap(id.toInt)
-  def getIcon(id: Int): String = "generic_icon.png"
-  def getIcon(heroName: String): String = "generic_icon.png"
-  def getMinimapIcon(id: Int): String = "generic_minimap_icon.png"
-  def getMinimapIcon(heroName: String): String = {
-    val default = "unknown_hero_minimap_icon.png"
-    val fileName = heroName.headOption match {
-      case Some(_) =>
-        heroName.toLowerCase.replace(' ', '_') + "_minimap_icon.png"
-      case _ =>
-        default
-    }
+
+  /**
+    * Get path to the hero icon
+    * @param optionalHero optional hero name
+    * @return path to the hero icon or question mark if hero is None
+    */
+  def getMinimapIcon(optionalHero: Option[String]): String = {
+
+    val fileName = optionalHero
+      .map(_.toLowerCase.replace(' ', '_') + "_minimap_icon.png")
+      .getOrElse("unknown_hero_minimap_icon.png")
+
     s"icons/$fileName"
   }
 }
