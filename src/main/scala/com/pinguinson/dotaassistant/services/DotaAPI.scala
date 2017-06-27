@@ -5,11 +5,10 @@ import cats.data._
 import cats.implicits._
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.models.Exceptions._
-import com.pinguinson.dotaassistant.models.Players._
 import com.pinguinson.dotaassistant.models.UserReports._
-import com.pinguinson.dotaassistant.models.Outcomes
+import com.pinguinson.dotaassistant.models.{Outcomes, Player}
 import dispatch.{Http, url}
-import io.circe.{DecodingFailure, HCursor, Json, Printer}
+import io.circe._
 import io.circe.generic.auto._
 import io.circe.parser._
 import net.ruippeixotog.scalascraper.browser.JsoupBrowser
@@ -18,7 +17,7 @@ import net.ruippeixotog.scalascraper.dsl.DSL._
 import net.ruippeixotog.scalascraper.model.Element
 
 import scala.concurrent.ExecutionContext.Implicits.global
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.Future
 import scala.util.Try
 
 /**
@@ -150,7 +149,7 @@ class DotaAPI(apiKey: String) extends Statistics {
         } else {
           Outcomes.Loss
         }
-      } yield UserGameInfo(IdentifiedPlayer(userId), heroName, result, requiredPlayer.kda)
+      } yield UserGameInfo(Player(userId), heroName, result, requiredPlayer.kda)
       parsed.left.map {
         case DecodingFailure(msg, _) => ParsingException(msg)
       }
@@ -165,14 +164,13 @@ class DotaAPI(apiKey: String) extends Statistics {
     val f: Future[Either[Throwable, List[UserHeroPerformance]]] = Future {
       Try {
         val doc = browser.get(s"https://www.dotabuff.com/players/$userId/heroes")
-//        val entries = doc >> elementList("section > article > table > tbody > tr") >> elementList("td")
         val rows: List[Element] = doc >> elementList("section > article > table > tbody > tr")
         val entries: List[List[Element]] = rows.map(_ >> elementList("td"))
         entries.map { columns =>
           val hero = columns(1) >> text("a")
           val matches = (columns(2) >> attr("data-value")).toInt
           val winrate = (columns(3) >> attr("data-value")).toDouble
-          UserHeroPerformance(IdentifiedPlayer(userId), hero, matches, winrate)
+          UserHeroPerformance(Player(userId), hero, matches, winrate)
         } take n
       }.toEither
     }
