@@ -34,54 +34,6 @@ class DotaAPI(apiKey: String) extends Statistics {
   }
 
   /**
-    * Parse response into JSON
-    * @param body response body as a string
-    * @return an exception if failed to parse
-    * or response code was anything but 1
-    */
-  private def processResponseHistory(body: String): Either[ApiError, HCursor] = {
-    val statusWithCursor = for {
-      json <- parse(body).right
-      cursor = json.hcursor
-      s <- cursor.downField("result").get[Int]("status").right
-    } yield (s, cursor)
-
-    statusWithCursor match {
-      //couldn't parse json
-      case Left(_) if body.contains("429") =>
-        Left(TooManyRequestsException)
-      case Left(_) =>
-        Left(AccessForbiddenException)
-      case Right((1, cursor)) =>
-        //all good
-        Right(cursor)
-      case Right((15, _)) =>
-        // Cannot get match history for a user that hasn't allowed it
-        Left(PrivateProfileException)
-      case _ =>
-        Left(UnknownException(body))
-    }
-  }
-
-  private def processResponseMatchDetails(body: String): Either[ApiError, HCursor] = {
-    val statusWithCursor = for {
-      json <- parse(body).right
-    } yield json.hcursor
-
-    statusWithCursor match {
-      case Left(_) if body.contains("429") =>
-        Left(TooManyRequestsException)
-      case Left(_) =>
-        Left(AccessForbiddenException)
-      case Right(cursor) if cursor.downField("result").get[String]("error").isRight =>
-        Left(MatchNotFound)
-      case Right(cursor) =>
-        // all good
-        Right(cursor)
-    }
-  }
-
-  /**
     * Send request to Steam API
     * @param endpoint API endpoint
     * @param params query params
@@ -104,13 +56,37 @@ class DotaAPI(apiKey: String) extends Statistics {
       detailsList.sequenceU
     }
 
+    def processResponse(body: String): Either[ApiError, HCursor] = {
+      val statusWithCursor = for {
+        json <- parse(body).right
+        cursor = json.hcursor
+        s <- cursor.downField("result").get[Int]("status").right
+      } yield (s, cursor)
+
+      statusWithCursor match {
+        //couldn't parse json
+        case Left(_) if body.contains("429") =>
+          Left(TooManyRequestsException)
+        case Left(_) =>
+          Left(AccessForbiddenException)
+        case Right((1, cursor)) =>
+          //all good
+          Right(cursor)
+        case Right((15, _)) =>
+          // Cannot get match history for a user that hasn't allowed it
+          Left(PrivateProfileException)
+        case _ =>
+          Left(UnknownException(body))
+      }
+    }
+
     val params = Map(
       "key" -> apiKey,
       "account_id" -> userId
     )
 
     getApiResponse(config.endpoints.matchHistory, params)
-      .subflatMap(body => processResponseHistory(body))
+      .subflatMap(body => processResponse(body))
       .flatMap(cursor => parseUserRecentGames(cursor))
   }
 
@@ -123,6 +99,24 @@ class DotaAPI(apiKey: String) extends Statistics {
       }
     }
 
+    def processResponse(body: String): Either[ApiError, HCursor] = {
+      val statusWithCursor = for {
+        json <- parse(body).right
+      } yield json.hcursor
+
+      statusWithCursor match {
+        case Left(_) if body.contains("429") =>
+          Left(TooManyRequestsException)
+        case Left(_) =>
+          Left(AccessForbiddenException)
+        case Right(cursor) if cursor.downField("result").get[String]("error").isRight =>
+          Left(MatchNotFound)
+        case Right(cursor) =>
+          // all good
+          Right(cursor)
+      }
+    }
+
     def tryToGetMatchDetails(userId: String, matchId: String): FutureEither[UserGameInfo] = {
 
       val params: Map[String, String] = Map(
@@ -131,7 +125,7 @@ class DotaAPI(apiKey: String) extends Statistics {
       )
 
       getApiResponse(config.endpoints.matchDetails, params)
-        .subflatMap(body => processResponseMatchDetails(body))
+        .subflatMap(body => processResponse(body))
         .subflatMap(cursor => parseUserGameInfo(cursor))
     }
 
@@ -139,9 +133,9 @@ class DotaAPI(apiKey: String) extends Statistics {
       val parsed = for {
         radiantVictory <- cursor.downField("result").get[Boolean]("radiant_win")
         players <- cursor.downField("result").get[List[PlayerField]]("players")
+        requiredPlayer <- players.find(_.account_id == userId.toLong).toRight(ParsingException("player not found"))
 
-        playedForRadiant = players.indexWhere(_.account_id == userId.toLong) < 5
-        requiredPlayer = players.find(_.account_id == userId.toLong).getOrElse(PlayerField(0, 0, 0, 0, 0))
+        playedForRadiant = players.indexOf(requiredPlayer) < 5
         heroName = HeroService.getName(requiredPlayer.hero_id)
 
         result = if (radiantVictory == playedForRadiant) {
@@ -150,8 +144,11 @@ class DotaAPI(apiKey: String) extends Statistics {
           Outcomes.Loss
         }
       } yield UserGameInfo(Player(userId), heroName, result, requiredPlayer.kda)
+
+      // convert circe's `DecodingFailure`s to `ParsingException`s
       parsed.left.map {
         case DecodingFailure(msg, _) => ParsingException(msg)
+        case p: ParsingException => p
       }
     }
 

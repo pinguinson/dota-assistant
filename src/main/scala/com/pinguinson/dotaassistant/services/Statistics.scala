@@ -1,13 +1,11 @@
 package com.pinguinson.dotaassistant.services
 
-import cats._
-import cats.data._
 import cats.implicits._
 import com.pinguinson.dotaassistant.models.Outcomes._
 import com.pinguinson.dotaassistant.models.UserReports._
 import com.pinguinson.dotaassistant.models.HeroPerformance
 
-import scala.concurrent.{ExecutionContext, Future}
+import scala.concurrent.ExecutionContext
 
 /**
   * Base trait for an assistant
@@ -49,14 +47,13 @@ trait Statistics {
     */
   def fetchMatchPlayersInfo(userIds: List[String])(implicit context: ExecutionContext): List[FutureEither[List[UserGameInfo]]] = {
     assert(userIds.length == 10)
-    val x: List[FutureEither[List[UserGameInfo]]] = userIds.map(fetchUserRecentGames)
-    x
+    userIds.map(fetchUserRecentGames)
   }
 
   /**
     * Get team's performance on heroes they pick
     * @param playerReports list with players' `UserGameInfo`s
-    * @return a list of [[HeroPerformance]], one entry per picked hero
+    * @return a list of `HeroPerformance`, one entry per picked hero
     */
   def analyzeTeam(playerReports: List[List[UserGameInfo]]): List[HeroPerformance] = {
     val heroPerformances = playerReports.flatten.groupBy(_.hero).toList.sortBy(-_._2.length)

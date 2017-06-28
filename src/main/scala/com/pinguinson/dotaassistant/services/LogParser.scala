@@ -3,7 +3,7 @@ package com.pinguinson.dotaassistant.services
 import java.net.URL
 
 import scala.io.Source
-import scala.util.{Failure, Success, Try}
+import scala.util.Try
 
 /**
   * Dota log parser
