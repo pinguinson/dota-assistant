@@ -12,6 +12,6 @@ object UserReports {
   }
 
   case class UserRecentGames(player: Player, matches: Seq[UserGameInfo]) extends UserReport
-  case class UserHeroPerformance(player: Player, hero: String, matches: Int, winrate: Double) extends UserReport
-  case class UserGameInfo(player: Player, hero: String, outcome: Outcome, kda: String) extends UserReport
+  case class UserHeroPerformance(player: Player, hero: Hero, matches: Int, winrate: Double) extends UserReport
+  case class UserGameInfo(player: Player, hero: Hero, outcome: Outcome, kda: String) extends UserReport
 }

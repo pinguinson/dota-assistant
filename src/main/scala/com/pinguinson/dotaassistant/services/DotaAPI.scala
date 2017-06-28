@@ -6,7 +6,7 @@ import cats.implicits._
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.models.Exceptions._
 import com.pinguinson.dotaassistant.models.UserReports._
-import com.pinguinson.dotaassistant.models.{Outcomes, Player}
+import com.pinguinson.dotaassistant.models.{Hero, Outcomes, Player}
 import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._
@@ -136,14 +136,15 @@ class DotaAPI(apiKey: String) extends Statistics {
         requiredPlayer <- players.find(_.account_id == userId.toLong).toRight(ParsingException("player not found"))
 
         playedForRadiant = players.indexOf(requiredPlayer) < 5
-        heroName = HeroService.getName(requiredPlayer.hero_id)
+        hero = Hero(requiredPlayer.hero_id)
+        player = Player(userId)
 
-        result = if (radiantVictory == playedForRadiant) {
+        outcome = if (radiantVictory == playedForRadiant) {
           Outcomes.Victory
         } else {
           Outcomes.Loss
         }
-      } yield UserGameInfo(Player(userId), heroName, result, requiredPlayer.kda)
+      } yield UserGameInfo(player, hero, outcome, requiredPlayer.kda)
 
       // convert circe's `DecodingFailure`s to `ParsingException`s
       parsed.left.map {
@@ -163,11 +164,13 @@ class DotaAPI(apiKey: String) extends Statistics {
         val doc = browser.get(s"https://www.dotabuff.com/players/$userId/heroes")
         val rows: List[Element] = doc >> elementList("section > article > table > tbody > tr")
         val entries: List[List[Element]] = rows.map(_ >> elementList("td"))
-        entries.map { columns =>
-          val hero = columns(1) >> text("a")
+        entries.flatMap { columns =>
+          val heroName = columns(1) >> text("a")
           val matches = (columns(2) >> attr("data-value")).toInt
           val winrate = (columns(3) >> attr("data-value")).toDouble
-          UserHeroPerformance(Player(userId), hero, matches, winrate)
+          Hero.getHeroByName(heroName) map { hero =>
+            UserHeroPerformance(Player(userId), hero, matches, winrate)
+          }
         } take n
       }.toEither
     }

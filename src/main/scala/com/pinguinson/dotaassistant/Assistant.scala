@@ -111,7 +111,7 @@ object Assistant extends JFXApp {
     * the game was won, set to red otherwise
     */
   def buildIcon(optionalGame: Option[UserGameInfo]): VBox = {
-    val icon = HeroService.getMinimapIcon(optionalGame.map(_.hero))
+    val icon = Hero.getMinimapIcon(optionalGame.map(_.hero))
     val view = new ImageView(new Image(icon))
     val bgColor = optionalGame.map(_.outcome) match {
       case Some(Victory) => Color.DarkSeaGreen
