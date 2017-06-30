@@ -69,7 +69,7 @@ object Assistant extends JFXApp {
     scene = mainScene
   }
 
-  stage.getIcons.add(new Image("icons/clockwerk_minimap_icon.png"))
+  stage.getIcons.add(new Image("icons/clockwerk.png"))
   stage.setTitle("Dota assistant")
 
   // stop program on window close
