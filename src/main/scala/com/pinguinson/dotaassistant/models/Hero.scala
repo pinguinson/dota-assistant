@@ -46,8 +46,8 @@ object Hero {
   def getMinimapIcon(optionalHero: Option[Hero]): String = {
 
     val fileName = optionalHero
-      .map(_.getName.toLowerCase.replace(' ', '_') + "_minimap_icon.png")
-      .getOrElse("unknown_hero_minimap_icon.png")
+      .map(_.getName.toLowerCase.replace(' ', '_') + ".png")
+      .getOrElse("unknown_hero.png")
 
     s"icons/$fileName"
   }
