@@ -43,7 +43,7 @@ class DotaAPITest extends AsyncFunSuite with Matchers with EitherValues {
 
       // I'm fairly certain this is not going to change (almost 300 games ahead of a second place)
       val mostPlayed = heroes.head
-      mostPlayed.hero shouldBe "Crystal Maiden"
+      mostPlayed.hero.getName shouldBe "Crystal Maiden"
       mostPlayed.matches should be >= 570
 
       // As of 6/20/2017 my 10th most played hero was picked 97 times
