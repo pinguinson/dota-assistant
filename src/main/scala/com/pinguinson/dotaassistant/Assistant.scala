@@ -85,19 +85,35 @@ object Assistant extends JFXApp {
       case None =>
         suggestions.setText("Failed to parse logs")
       case Some(players) =>
-        val (radiantReports, direReports) = new DotaAPI(apiKey).fetchMatchPlayersInfo(players).splitAt(5)
+        val api = new DotaAPI(apiKey)
+        val (radiantReports, direReports) = api.fetchMatchPlayersInfo(players).splitAt(5)
+        val (radiantPlayers, direPlayers) = api.fetchUsersInfo(players).splitAt(5)
         // set placeholder grids
         val grids = players.map(buildIconGrid)
-        radiantBlock.children = grids.take(5)
-        direBlock.children = grids.drop(5)
+        val labels = players.map(buildLabel)
+        val blocks = labels zip grids flatMap {
+          case (label, grid) => List(label, grid)
+        }
+        radiantBlock.children = blocks.take(10)
+        direBlock.children = blocks.drop(10)
+
+        radiantPlayers.map(_.map { player =>
+          val index = players.indexOf(player.id) * 2
+          radiantBlock.children.set(index, buildLabel(player))
+        })
 
         radiantReports.map(_.map { playerMatches =>
-          val index = players.indexOf(playerMatches.head.player.id)
+          val index = players.indexOf(playerMatches.head.player.id) * 2 + 1
           radiantBlock.children.set(index, buildIconGrid(playerMatches))
         })
 
+        direPlayers.map(_.map { player =>
+          val index = (players.indexOf(player.id) - 5) * 2
+          direBlock.children.set(index, buildLabel(player))
+        })
+
         direReports.map(_.map { playerMatches =>
-          val index = players.indexOf(playerMatches.head.player.id) - 5
+          val index = (players.indexOf(playerMatches.head.player.id) - 5) * 2 + 1
           direBlock.children.set(index, buildIconGrid(playerMatches))
         })
     }
@@ -128,45 +144,55 @@ object Assistant extends JFXApp {
   }
 
   /**
-    * Build a labeled icon grid
-    * @param labelText label text
+    * Build an icon grid
     * @param optionalGames list of optional `UserGameInfo`'s
-    * @return `VBox` containing `Label` with `labelText` and an
-    * icon grid (one icon per optional `UserGameInfo`)
+    * @return `VBox` containing an icon grid (one icon per optional `UserGameInfo`)
     */
-  def buildIconGrid(labelText: String, optionalGames: List[Option[UserGameInfo]]): VBox = {
+  def buildIconGridAux(optionalGames: List[Option[UserGameInfo]]): VBox = {
     val views = optionalGames.map(buildIcon)
-    val label = new Label(labelText)
     val row1 = new HBox {
       children = views.take(10)
     }
     val row2 = new HBox {
       children = views.drop(10)
     }
-    new VBox(label, row1, row2)
+    new VBox(row1, row2)
   }
 
   /**
     * Build a placeholder icon grid for `userId`
     * @param userId user ID
-    * @return `VBox` containing label `userId` and 10x2 grid
-    * with question marks
+    * @return `VBox` containing 10x2 grid with question marks
     */
   def buildIconGrid(userId: String): VBox = {
-    val labelText = s"Player #$userId"
     val optionalGames = List.fill[Option[UserGameInfo]](20)(None)
-    buildIconGrid(labelText, optionalGames)
+    buildIconGridAux(optionalGames)
   }
 
   /**
     * Build an icon grid for the `games`
     * @param games list of user's `UserGameInfo`s
-    * @return `VBox` containing label (player's id) and 10x2 grid
-    * with icons of the heroes he played
+    * @return `VBox` containing 10x2 grid with icons of the heroes user played
     */
   def buildIconGrid(games: List[UserGameInfo]): VBox = {
-    val labelText = s"Player #${games.head.player.id}"
     val optionalGames = games.map(Some(_))
-    buildIconGrid(labelText, optionalGames)
+    buildIconGridAux(optionalGames)
+  }
+  /**
+    * Build a `Label` for a user
+    * @param info `UserInfo`
+    * @return `Label` with user's nickname, solo MMR, and party MMR
+    */
+  def buildLabel(info: UserInfo): Label = {
+    Label(info.pretty)
+  }
+
+  /**
+    * Build a `Label` for a user
+    * @param userId user ID
+    * @return `Label` with user ID
+    */
+  def buildLabel(userId: String) = {
+    Label(s"Player #$userId")
   }
 }

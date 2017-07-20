@@ -7,7 +7,10 @@ import org.scalatest._
 /**
   * Created by pinguinson on 6/12/2017.
   */
-class DotaAPITest extends AsyncFunSuite with Matchers with EitherValues {
+class DotaAPITest extends AsyncFunSuite
+  with Matchers
+  with EitherValues
+  with OptionValues {
 
   val validId = "61242572"
   val privateId = "61242573"
@@ -63,6 +66,17 @@ class DotaAPITest extends AsyncFunSuite with Matchers with EitherValues {
   test("fetchUserMostPlayedHeroes with an invalid ID should return empty list") {
     api.fetchUserMostPlayedHeroes(invalidCharactersId, 10).value.map { either =>
       either.left.value shouldBe a [UnknownException]
+    }
+  }
+
+  test("parseUserInfo with a valid ID") {
+    api.fetchUserInfo(validId).value.map { either =>
+      val userInfo = either.right.value
+
+      userInfo.id.toString shouldBe validId
+      userInfo.nickname shouldBe "pinguinson"
+      userInfo.solo.value should be > 5000
+      userInfo.party.value should be < 3500
     }
   }
 }

@@ -6,7 +6,7 @@ import cats.implicits._
 import com.pinguinson.dotaassistant.config.DotaApiConfig.config
 import com.pinguinson.dotaassistant.models.Exceptions._
 import com.pinguinson.dotaassistant.models.UserReports._
-import com.pinguinson.dotaassistant.models.{Hero, Outcomes, Player}
+import com.pinguinson.dotaassistant.models._
 import dispatch.{Http, url}
 import io.circe._
 import io.circe.generic.auto._
@@ -39,7 +39,7 @@ class DotaAPI(apiKey: String) extends Statistics {
     * @param params query params
     * @return EitherT.right with response as a string
     */
-  private def getApiResponse(endpoint: String, params: Traversable[(String,String)]): FutureEither[String] = {
+  private def getApiResponse(endpoint: String, params: Traversable[(String,String)] = Traversable.empty): FutureEither[String] = {
     val request = url(endpoint) <<? params
     EitherT.right(Http.default(request)).map(_.getResponseBody)
   }
@@ -175,5 +175,39 @@ class DotaAPI(apiKey: String) extends Statistics {
       }.toEither
     }
     EitherT(f).leftMap(e => UnknownException(e.getMessage))
+  }
+
+  def fetchUserInfo(userId: String): FutureEither[UserInfo] = {
+
+    def processResponse(body: String): Either[ApiError, HCursor] = {
+      val statusWithCursor = for {
+        json <- parse(body).right
+      } yield json.hcursor
+
+      statusWithCursor match {
+        case Left(_) =>
+          Left(UnknownException("OpenDotaException"))
+        case Right(cursor) =>
+          // all good
+          Right(cursor)
+      }
+    }
+
+    def parseUserInfo(cursor: HCursor): Either[ParsingException, UserInfo] = {
+      val parsed = for {
+        id <- cursor.downField("profile").get[Int]("account_id").map(_.toString)
+        nickname <- cursor.downField("profile").get[String]("personaname")
+        solo = cursor.get[String]("solo_competitive_rank").toOption.map(_.toInt)
+        party = cursor.get[String]("competitive_rank").toOption.map(_.toInt)
+      } yield UserInfo(id, nickname, solo, party)
+
+      parsed.left.map {
+        case DecodingFailure(msg, _) => ParsingException(msg)
+      }
+    }
+
+    getApiResponse(config.endpoints.playerInfo + userId)
+      .subflatMap(body => processResponse(body))
+      .subflatMap(cursor => parseUserInfo(cursor))
   }
 }

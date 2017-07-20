@@ -3,7 +3,7 @@ package com.pinguinson.dotaassistant.services
 import cats.implicits._
 import com.pinguinson.dotaassistant.models.Outcomes._
 import com.pinguinson.dotaassistant.models.UserReports._
-import com.pinguinson.dotaassistant.models.HeroPerformance
+import com.pinguinson.dotaassistant.models.{HeroPerformance, UserInfo}
 
 import scala.concurrent.ExecutionContext
 
@@ -37,6 +37,22 @@ trait Statistics {
     * @return a future containing n most played heroes
     */
   def fetchUserMostPlayedHeroes(userId: String, n: Int): FutureEither[List[UserHeroPerformance]]
+
+  /**
+    * Fetch player information (nickname and MMR)
+    * @param userId user ID
+    * @return player's `UserInfo`
+    */
+  def fetchUserInfo(userId: String): FutureEither[UserInfo]
+
+  /**
+    * Fetch information about players (nicknames and MMR)
+    * @param userIds list of user IDs
+    * @return players' `UserInfo`s
+    */
+  def fetchUsersInfo(userIds: List[String]): List[FutureEither[UserInfo]] = {
+    userIds.map(fetchUserInfo)
+  }
 
   /**
     * Fetch information about 10 players in a match
