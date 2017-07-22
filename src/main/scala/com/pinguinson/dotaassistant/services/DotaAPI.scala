@@ -179,35 +179,90 @@ class DotaAPI(apiKey: String) extends Statistics {
 
   def fetchUserInfo(userId: String): FutureEither[UserInfo] = {
 
-    def processResponse(body: String): Either[ApiError, HCursor] = {
-      val statusWithCursor = for {
-        json <- parse(body).right
-      } yield json.hcursor
+    def fetchUserInfoSteam(userId: String): FutureEither[UserInfo] = {
 
-      statusWithCursor match {
-        case Left(_) =>
-          Left(UnknownException("OpenDotaException"))
-        case Right(cursor) =>
-          // all good
-          Right(cursor)
+      def processResponse(body: String): Either[ApiError, HCursor] = {
+        val statusWithCursor = for {
+          json <- parse(body).right
+        } yield json.hcursor
+
+        statusWithCursor match {
+          case Left(_) =>
+            Left(AccessForbiddenException)
+          case Right(cursor) =>
+            // all good
+            Right(cursor)
+        }
       }
+
+      def parseUserInfo(cursor: HCursor): Either[ParsingException, UserInfo] = {
+        val parsed = for {
+          nickname <- cursor
+            .downField("response")
+            .downField("players")
+            .downArray
+            .get[String]("personaname")
+        } yield UserInfo(userId, nickname, None, None)
+
+        parsed.left.map {
+          case DecodingFailure(msg, _) => ParsingException(msg)
+        }
+      }
+
+      // converting 32 bit Steam ID used in logs to 64 bit one
+      val userId64 = {
+        val head = 765
+        val tail = userId.toLong + 61197960265728L
+        head.toString + tail.toString
+      }
+
+      val params: Map[String, String] = Map(
+        "key" -> apiKey,
+        "steamids" -> userId64
+      )
+
+      getApiResponse(config.endpoints.playerInfoBackup, params)
+        .subflatMap(body => processResponse(body))
+        .subflatMap(cursor => parseUserInfo(cursor))
     }
 
-    def parseUserInfo(cursor: HCursor): Either[ParsingException, UserInfo] = {
-      val parsed = for {
-        id <- cursor.downField("profile").get[Int]("account_id").map(_.toString)
-        nickname <- cursor.downField("profile").get[String]("personaname")
-        solo = cursor.get[String]("solo_competitive_rank").toOption.map(_.toInt)
-        party = cursor.get[String]("competitive_rank").toOption.map(_.toInt)
-      } yield UserInfo(id, nickname, solo, party)
+    def fetchUserInfoOpenDota(userId: String): FutureEither[UserInfo] = {
 
-      parsed.left.map {
-        case DecodingFailure(msg, _) => ParsingException(msg)
+      def processResponse(body: String): Either[ApiError, HCursor] = {
+        val statusWithCursor = for {
+          json <- parse(body).right
+        } yield json.hcursor
+
+        statusWithCursor match {
+          case Left(_) =>
+            Left(UnknownException("OpenDotaException"))
+          case Right(cursor) =>
+            // all good
+            Right(cursor)
+        }
       }
+
+      def parseUserInfo(cursor: HCursor): Either[ParsingException, UserInfo] = {
+        val parsed = for {
+          id <- cursor.downField("profile").get[Int]("account_id").map(_.toString)
+          nickname <- cursor.downField("profile").get[String]("personaname")
+          solo = cursor.get[String]("solo_competitive_rank").toOption.map(_.toInt)
+          party = cursor.get[String]("competitive_rank").toOption.map(_.toInt)
+        } yield UserInfo(id, nickname, solo, party)
+
+        parsed.left.map {
+          case DecodingFailure(msg, _) => ParsingException(msg)
+        }
+      }
+
+      getApiResponse(config.endpoints.playerInfo + userId)
+        .subflatMap(body => processResponse(body))
+        .subflatMap(cursor => parseUserInfo(cursor))
     }
 
-    getApiResponse(config.endpoints.playerInfo + userId)
-      .subflatMap(body => processResponse(body))
-      .subflatMap(cursor => parseUserInfo(cursor))
+    fetchUserInfoOpenDota(userId) recoverWith {
+      // at least get player's nickname
+      case _ => fetchUserInfoSteam(userId)
+    }
   }
 }

@@ -7,11 +7,11 @@ import pureconfig.loadConfig
   */
 object DotaApiConfig {
 
-  case class Endpoints(matchHistory: String, matchDetails: String, playerInfo: String)
+  case class Endpoints(matchHistory: String, matchDetails: String, playerInfo: String, playerInfoBackup: String)
   case class DotaApiConfig(endpoints: Endpoints, validLobbyTypes: Seq[Int], maxRecentGames: Int, maxRetries: Int, apiKey: String)
   private case class DotaApi(dotaApi: DotaApiConfig)
 
-  private val defaultConfig = DotaApiConfig(Endpoints("missing", "missing", "missing"), List.empty, 1, 1, "missing")
+  private val defaultConfig = DotaApiConfig(Endpoints("missing", "missing", "missing", "missing"), List.empty, 1, 1, "missing")
 
   lazy val config: DotaApiConfig = loadConfig[DotaApi] match {
     case Left(ex) =>

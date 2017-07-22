@@ -73,10 +73,22 @@ class DotaAPITest extends AsyncFunSuite
     api.fetchUserInfo(validId).value.map { either =>
       val userInfo = either.right.value
 
-      userInfo.id.toString shouldBe validId
+      userInfo.id shouldBe validId
       userInfo.nickname shouldBe "pinguinson"
       userInfo.solo.value should be > 5000
       userInfo.party.value should be < 3500
+    }
+  }
+
+  test("parseUserInfo with a private profile should only return a nickname") {
+    api.fetchUserInfo(privateId).value.map { either =>
+      val userInfo = either.right.value
+
+      userInfo.id shouldBe privateId
+      userInfo.nickname.length should be > 0
+      userInfo.solo shouldBe None
+      userInfo.party shouldBe None
+
     }
   }
 }
