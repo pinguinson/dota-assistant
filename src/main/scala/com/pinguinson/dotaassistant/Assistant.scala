@@ -65,7 +65,7 @@ object Assistant extends JFXApp {
 
   stage = new PrimaryStage {
     width = 690
-    height = 630
+    height = 650
     scene = mainScene
   }
 
