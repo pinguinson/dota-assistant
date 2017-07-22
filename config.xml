@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<launch4jConfig>
+  <dontWrapJar>false</dontWrapJar>
+  <headerType>gui</headerType>
+  <jar>target/scala-2.12/assistant.jar</jar>
+  <outfile>assistant.exe</outfile>
+  <errTitle></errTitle>
+  <cmdLine></cmdLine>
+  <chdir>.</chdir>
+  <priority>normal</priority>
+  <downloadUrl>http://java.com/download</downloadUrl>
+  <supportUrl></supportUrl>
+  <stayAlive>false</stayAlive>
+  <restartOnCrash>false</restartOnCrash>
+  <manifest></manifest>
+  <icon>assistant.ico</icon>
+  <jre>
+    <path></path>
+    <bundledJre64Bit>false</bundledJre64Bit>
+    <bundledJreAsFallback>false</bundledJreAsFallback>
+    <minVersion>1.8.0_102</minVersion>
+    <maxVersion></maxVersion>
+    <jdkPreference>preferJre</jdkPreference>
+    <runtimeBits>64/32</runtimeBits>
+  </jre>
+  <versionInfo>
+    <fileVersion>0.1.4.0</fileVersion>
+    <txtFileVersion>v0.1.4</txtFileVersion>
+    <fileDescription>Dota 2 draft assistant</fileDescription>
+    <copyright>Nope</copyright>
+    <productVersion>0.1.4.0</productVersion>
+    <txtProductVersion>v0.1.4</txtProductVersion>
+    <productName>Alfrog</productName>
+    <companyName>Evil Penguins Inc.</companyName>
+    <internalName>Alfrog</internalName>
+    <originalFilename>assistant.exe</originalFilename>
+    <trademarks></trademarks>
+    <language>ENGLISH_US</language>
+  </versionInfo>
+</launch4jConfig>

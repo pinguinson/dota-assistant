@@ -12,12 +12,17 @@ cache:
   directories:
   - "$HOME/.ivy2/cache"
   - "$HOME/.sbt"
-before_deploy: "sbt assembly"
+before_deploy:
+- test $TRAVIS_TEST_RESULT = 0 &&\
+  sbt assembly &&\
+  wget 'https://downloads.sourceforge.net/project/launch4j/launch4j-3/3.11/launch4j-3.11-linux-x64.tgz' &&\
+  tar -xvf launch4j-3.11-linux-x64.tgz &&\
+  ./launch4j/launch4j config.xml
 deploy:
   provider: releases
   api_key:
     secure: ZwxYPuYLtKibOXPRqUBdBdGcKxnX2debWtjtUI29LIfKG+PxbN5J03n+doXN2FSUKrEk/Km8tCudA0P9gjPIywiq3P1j1mTTge8lPuzxQo+yo2U/nANM3UJzIHpm4rdSE+8Yla9Jf4oc6Of5hvoT0tcWiwhPa8bEi6MXuJfv5kbZDShQjtoGckLFoS9IwwTReSbLXBHLEOpLbgRdV8LyF61fttalZ4CATaZ3WLh2Kf62Jr/f291fz8eteBrjObQ4DhNyvbB484h00JPo7f67mc9C8cvYMz2MDqHFMLgBusv/KoeUJ0eEQBZ+TzuiMf7v/rXEhcsNpDXqfR+dFYoPzHA9tnMbiMx2ZV4XYp+db5DG6u6liega/XQKpScszDDESwNZ2e7yflXKi/sfKb0I/ANC0snS4N3n/LEfSpRSoAppLzjYkZcM9rNm06FZET3iKOWldZTg2DiZNwbRxwLJTkNHkc+QxQjDsJAbyVuNOatLCznJ0l49hI51w8nGS6it8g0rT+P/bpp/2dzDRCkRaMY9eEW+f+lS3y59yoxdc1+vlJb5P4WCjGdEpVUF40Qc7G5EepzgXFj3BihbQXNqT0Milyf+lNdiG3rshUacA7k8u1Wz6nZUyM672/pozjOE1IpwqyTXFmr8LIU7BCHUm2+Dh2Wd96PO5OoL31oeEyU=
-  file: target/scala-2.12/assistant.jar
+  file: assistant.exe
   on:
     repo: pinguinson/dota-assistant
     tags: true
