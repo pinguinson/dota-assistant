@@ -7,8 +7,10 @@ import com.pinguinson.dotaassistant.models._
 import com.pinguinson.dotaassistant.models.UserReports._
 import com.pinguinson.dotaassistant.services._
 import com.pinguinson.dotaassistant.JavaFXExecutionContext.javaFxExecutionContext
+import com.pinguinson.dotaassistant.config.AssistantConfig.{saveConfig, config => assistantConfig}
 import com.pinguinson.dotaassistant.models.Outcomes._
 
+import javafx.scene.control.{TextField => JTextField}
 import scalafx.Includes._
 import scalafx.application._
 import scalafx.application.JFXApp.PrimaryStage
@@ -23,10 +25,10 @@ object Assistant extends JFXApp {
 
   val defaultPadding = Insets(10, 10, 10, 10)
 
-  val logPathTextField = new TextField()
+  val logPathTextField = buildTextField(assistantConfig.logPath)
   logPathTextField.setPrefWidth(650)
 
-  val apiKeyTextField = new TextField()
+  val apiKeyTextField = buildTextField(assistantConfig.apiKey)
   apiKeyTextField.setPrefWidth(650)
 
   val buttonParse = new Button("Parse last match")
@@ -38,6 +40,7 @@ object Assistant extends JFXApp {
     new Label("Your Steam API key"),
     apiKeyTextField)
   textFields.setSpacing(5)
+
   val textFieldAndButton = new VBox(textFields, buttonParse)
   textFieldAndButton.setSpacing(10)
 
@@ -79,6 +82,7 @@ object Assistant extends JFXApp {
   })
 
   def processButtonClick(): Unit = {
+    updateConfig()
     val path = new File(logPathTextField.getText).toURI.toURL
     val apiKey = apiKeyTextField.getText
     LogParser.getLobbyPlayers(path) match {
@@ -192,7 +196,29 @@ object Assistant extends JFXApp {
     * @param userId user ID
     * @return `Label` with user ID
     */
-  def buildLabel(userId: String) = {
+  def buildLabel(userId: String): Label = {
     Label(s"Player #$userId")
+  }
+
+  /**
+    * Build a `TextField` with an optional default text
+    * @param defaultText default text or `None`
+    * @return a `TextField`
+    */
+  def buildTextField(defaultText: Option[String]): TextField = defaultText match {
+    case Some(text) =>
+      new TextField(new JTextField(text))
+    case None =>
+      new TextField()
+  }
+
+  /**
+    * Save log path and API key in text fields to the config file
+    */
+  def updateConfig(): Unit = {
+    val path = logPathTextField.getText
+    val apiKey = apiKeyTextField.getText
+    if (!path.isEmpty && !apiKey.isEmpty)
+      saveConfig(path, apiKey)
   }
 }
