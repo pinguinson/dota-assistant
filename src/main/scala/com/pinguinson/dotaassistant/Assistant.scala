@@ -1,24 +1,26 @@
 package com.pinguinson.dotaassistant
 
 import java.io.File
+import javafx.scene.control.{TextField => JTextField}
 
 import cats.implicits._
-import com.pinguinson.dotaassistant.models._
-import com.pinguinson.dotaassistant.models.UserReports._
-import com.pinguinson.dotaassistant.services._
 import com.pinguinson.dotaassistant.JavaFXExecutionContext.javaFxExecutionContext
 import com.pinguinson.dotaassistant.config.AssistantConfig.{saveConfig, config => assistantConfig}
 import com.pinguinson.dotaassistant.models.Outcomes._
+import com.pinguinson.dotaassistant.models.UserReports._
+import com.pinguinson.dotaassistant.models._
+import com.pinguinson.dotaassistant.services._
+import monix.execution.{Cancelable, Scheduler}
 
-import javafx.scene.control.{TextField => JTextField}
+import scala.concurrent.duration._
 import scalafx.Includes._
-import scalafx.application._
 import scalafx.application.JFXApp.PrimaryStage
+import scalafx.application._
+import scalafx.geometry.Insets
 import scalafx.scene._
 import scalafx.scene.control._
 import scalafx.scene.image._
 import scalafx.scene.layout._
-import scalafx.geometry.Insets
 import scalafx.scene.paint.Color
 
 object Assistant extends JFXApp {
@@ -81,50 +83,75 @@ object Assistant extends JFXApp {
     System.exit(1)
   })
 
+  var monitoring = Cancelable.empty
+
   def processButtonClick(): Unit = {
     updateConfig()
-    val path = new File(logPathTextField.getText).toURI.toURL
-    val apiKey = apiKeyTextField.getText
-    LogParser.getLobbyPlayers(path) match {
-      case None =>
-        suggestions.setText("Failed to parse logs")
-      case Some(players) =>
-        val api = new DotaAPI(apiKey)
-        val (radiantReports, direReports) = api.fetchMatchPlayersInfo(players).splitAt(5)
-        val (radiantPlayers, direPlayers) = api.fetchUsersInfo(players).splitAt(5)
-        // set placeholder grids
-        val grids = players.map(buildIconGrid)
-        val labels = players.map(buildLabel)
-        val blocks = labels zip grids flatMap {
-          case (label, grid) => List(label, grid)
-        }
-        radiantBlock.children = blocks.take(10)
-        direBlock.children = blocks.drop(10)
+    monitoring.cancel()
+    monitoring = monitorLogs()
+  }
 
-        radiantPlayers.map(_.map { player =>
-          val index = players.indexOf(player.id) * 2
-          radiantBlock.children.set(index, buildLabel(player))
-        })
-
-        radiantReports.map(_.map { playerMatches =>
-          val index = players.indexOf(playerMatches.head.player.id) * 2 + 1
-          radiantBlock.children.set(index, buildIconGrid(playerMatches))
-        })
-
-        direPlayers.map(_.map { player =>
-          val index = (players.indexOf(player.id) - 5) * 2
-          direBlock.children.set(index, buildLabel(player))
-        })
-
-        direReports.map(_.map { playerMatches =>
-          val index = (players.indexOf(playerMatches.head.player.id) - 5) * 2 + 1
-          direBlock.children.set(index, buildIconGrid(playerMatches))
-        })
+  /**
+    * Constantly check log file for a new lobby
+    * @return Scheduled `Cancelable`
+    */
+  def monitorLogs(): Cancelable = {
+    val scheduler = Scheduler(javaFxExecutionContext)
+    var currentLobby = getLobbyPlayers()
+    processNewLobby(currentLobby)
+    scheduler.scheduleAtFixedRate(1 second, 1 second) {
+      val lobby = getLobbyPlayers()
+      if (lobby != currentLobby) {
+        currentLobby = lobby
+        processNewLobby(currentLobby)
+      }
     }
   }
 
   /**
+    * Update views based on a lobby
+    * @param lobby optional list of players in a lobby
+    */
+  def processNewLobby(lobby: Option[List[String]]): Unit = lobby match {
+    case None =>
+      suggestions.setText("Failed to parse logs")
+    case Some(players) =>
+      val api = new DotaAPI(apiKeyTextField.getText)
+      val (radiantReports, direReports) = api.fetchMatchPlayersInfo(players).splitAt(5)
+      val (radiantPlayers, direPlayers) = api.fetchUsersInfo(players).splitAt(5)
+      // set placeholder grids
+      val grids = players.map(buildIconGrid)
+      val labels = players.map(buildLabel)
+      val blocks = labels zip grids flatMap {
+        case (label, grid) => List(label, grid)
+      }
+      radiantBlock.children = blocks.take(10)
+      direBlock.children = blocks.drop(10)
+
+      radiantPlayers.map(_.map { player =>
+        val index = players.indexOf(player.id) * 2
+        radiantBlock.children.set(index, buildLabel(player))
+      })
+
+      radiantReports.map(_.map { playerMatches =>
+        val index = players.indexOf(playerMatches.head.player.id) * 2 + 1
+        radiantBlock.children.set(index, buildIconGrid(playerMatches))
+      })
+
+      direPlayers.map(_.map { player =>
+        val index = (players.indexOf(player.id) - 5) * 2
+        direBlock.children.set(index, buildLabel(player))
+      })
+
+      direReports.map(_.map { playerMatches =>
+        val index = (players.indexOf(playerMatches.head.player.id) - 5) * 2 + 1
+        direBlock.children.set(index, buildIconGrid(playerMatches))
+      })
+  }
+
+  /**
     * Build a `VBox` with a hero icon
+    *
     * @param optionalGame optional `UserGameInfo`
     * @return `VBox` with an `ImageView` containing hero icon or a question mark
     * if `UserGameInfo` is not present. Background color is set to green if
@@ -149,6 +176,7 @@ object Assistant extends JFXApp {
 
   /**
     * Build an icon grid
+    *
     * @param optionalGames list of optional `UserGameInfo`'s
     * @return `VBox` containing an icon grid (one icon per optional `UserGameInfo`)
     */
@@ -165,6 +193,7 @@ object Assistant extends JFXApp {
 
   /**
     * Build a placeholder icon grid for `userId`
+    *
     * @param userId user ID
     * @return `VBox` containing 10x2 grid with question marks
     */
@@ -175,6 +204,7 @@ object Assistant extends JFXApp {
 
   /**
     * Build an icon grid for the `games`
+    *
     * @param games list of user's `UserGameInfo`s
     * @return `VBox` containing 10x2 grid with icons of the heroes user played
     */
@@ -193,6 +223,7 @@ object Assistant extends JFXApp {
 
   /**
     * Build a `Label` for a user
+    *
     * @param userId user ID
     * @return `Label` with user ID
     */
@@ -202,6 +233,7 @@ object Assistant extends JFXApp {
 
   /**
     * Build a `TextField` with an optional default text
+    *
     * @param defaultText default text or `None`
     * @return a `TextField`
     */
@@ -220,5 +252,14 @@ object Assistant extends JFXApp {
     val apiKey = apiKeyTextField.getText
     if (!path.isEmpty && !apiKey.isEmpty)
       saveConfig(path, apiKey)
+  }
+
+  /**
+    * Get lobby players using log path in logPathTextField
+    * @return optional list of players in a lobby
+    */
+  def getLobbyPlayers(): Option[List[String]] = {
+    val path = new File(logPathTextField.getText).toURI.toURL
+    LogParser.getLobbyPlayers(path)
   }
 }

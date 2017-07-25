@@ -17,7 +17,9 @@ libraryDependencies ++= Seq(
   // configuration
   "com.github.pureconfig" %% "pureconfig" % "0.7.2",
   // GUI
-"org.scalafx" %% "scalafx" % "8.0.102-R11"
+  "org.scalafx" %% "scalafx" % "8.0.102-R11",
+  // async
+  "io.monix" %% "monix" % "2.3.0"
 )
 
 val circeVersion = "0.8.0"
