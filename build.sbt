@@ -5,8 +5,6 @@ version := "1.0"
 scalaVersion := "2.12.2"
 
 libraryDependencies ++= Seq(
-  // swing for UI
-  "org.scala-lang.modules" %% "scala-swing" % "2.0.0",
   // html scraper for dotabuff
   "net.ruippeixotog" %% "scala-scraper" % "2.0.0-RC2",
   // scala test
