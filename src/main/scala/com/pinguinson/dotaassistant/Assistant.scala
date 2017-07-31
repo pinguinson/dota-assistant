@@ -133,27 +133,30 @@ object Assistant extends JFXApp {
       radiantBlock.children = blocks.take(10)
       direBlock.children = blocks.drop(10)
 
-      radiantPlayers.map(_.map { player =>
-        val index = players.indexOf(player.id) * 2
-        radiantBlock.children.set(index, buildLabel(player))
+      // the following two blocks can be refactored even further, but wouldn't it get unreadable?
+      (radiantPlayers ::: direPlayers).map(_.map { player =>
+        players.indexOf(player.id) match {
+          case i if i < 5 =>
+            val index = i * 2
+            radiantBlock.children.set(index, buildLabel(player))
+          case i =>
+            val index = (i - 5) * 2
+            direBlock.children.set(index, buildLabel(player))
+        }
+        // fit window
         stage.sizeToScene()
       })
 
-      radiantReports.map(_.map { playerMatches =>
-        val index = players.indexOf(playerMatches.head.player.id) * 2 + 1
-        radiantBlock.children.set(index, buildIconGrid(playerMatches))
-        stage.sizeToScene()
-      })
-
-      direPlayers.map(_.map { player =>
-        val index = (players.indexOf(player.id) - 5) * 2
-        direBlock.children.set(index, buildLabel(player))
-        stage.sizeToScene()
-      })
-
-      direReports.map(_.map { playerMatches =>
-        val index = (players.indexOf(playerMatches.head.player.id) - 5) * 2 + 1
-        direBlock.children.set(index, buildIconGrid(playerMatches))
+      (radiantReports ::: direReports).map(_.map { playerMatches =>
+        players.indexOf(playerMatches.head.player.id) match {
+          case i if i < 5 =>
+            val index = i * 2 + 1
+            radiantBlock.children.set(index, buildIconGrid(playerMatches))
+          case i =>
+            val index = (i - 5) * 2 + 1
+            direBlock.children.set(index, buildIconGrid(playerMatches))
+        }
+        // fit window
         stage.sizeToScene()
       })
   }
