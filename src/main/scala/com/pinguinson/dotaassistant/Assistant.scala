@@ -213,22 +213,29 @@ object Assistant extends JFXApp {
     buildIconGridAux(optionalGames)
   }
   /**
-    * Build a `Label` for a user
-    * @param info `UserInfo`
-    * @return `Label` with user's nickname, solo MMR, and party MMR
+    * Build a hyperlink to user's dotabuff
+    *
+    * @param info user for whom you need the hyperlink
+    * @return `Hyperlink` with user's nickname, solo MMR, and party MMR
     */
-  def buildLabel(info: UserInfo): Label = {
-    Label(info.pretty)
+  def buildLabel(info: UserInfo): Hyperlink = {
+    val link = s"https://www.dotabuff.com/players/${info.id}"
+    val hyperlink = new Hyperlink(info.pretty)
+    hyperlink.setOnAction(handle(hostServices.showDocument(link)))
+    hyperlink
   }
 
   /**
-    * Build a `Label` for a user
+    * Build a hyperlink to user's dotabuff
     *
     * @param userId user ID
-    * @return `Label` with user ID
+    * @return `Hyperlink` with user's ID
     */
-  def buildLabel(userId: String): Label = {
-    Label(s"Player #$userId")
+  def buildLabel(userId: String): Hyperlink = {
+    val link = s"https://www.dotabuff.com/players/$userId"
+    val hyperlink = new Hyperlink(s"Player #$userId")
+    hyperlink.setOnAction(handle(hostServices.showDocument(link)))
+    hyperlink
   }
 
   /**
