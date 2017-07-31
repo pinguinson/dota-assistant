@@ -69,10 +69,15 @@ object Assistant extends JFXApp {
   mainBlock.setSpacing(10)
 
   stage = new PrimaryStage {
-    width = 690
-    height = 650
+    // i apologise for some magic numbers in the following lines
+    width = 686 // this is what window fits its width to after calling stage.sizeToScene
+    height = 686 // also turns out this app is surprisingly square
     scene = mainScene
   }
+
+  stage.sizeToScene()
+  stage.setMinWidth(686)
+  stage.setMinHeight(686)
 
   stage.getIcons.add(new Image("icons/clockwerk.png"))
   stage.setTitle("Dota assistant")
@@ -131,21 +136,25 @@ object Assistant extends JFXApp {
       radiantPlayers.map(_.map { player =>
         val index = players.indexOf(player.id) * 2
         radiantBlock.children.set(index, buildLabel(player))
+        stage.sizeToScene()
       })
 
       radiantReports.map(_.map { playerMatches =>
         val index = players.indexOf(playerMatches.head.player.id) * 2 + 1
         radiantBlock.children.set(index, buildIconGrid(playerMatches))
+        stage.sizeToScene()
       })
 
       direPlayers.map(_.map { player =>
         val index = (players.indexOf(player.id) - 5) * 2
         direBlock.children.set(index, buildLabel(player))
+        stage.sizeToScene()
       })
 
       direReports.map(_.map { playerMatches =>
         val index = (players.indexOf(playerMatches.head.player.id) - 5) * 2 + 1
         direBlock.children.set(index, buildIconGrid(playerMatches))
+        stage.sizeToScene()
       })
   }
 
