@@ -62,7 +62,6 @@ trait Statistics {
     * up to 20 UserGameInfo's
     */
   def fetchMatchPlayersInfo(userIds: List[String])(implicit context: ExecutionContext): List[FutureEither[List[UserGameInfo]]] = {
-    assert(userIds.length == 10)
     userIds.map(fetchUserRecentGames)
   }
 
