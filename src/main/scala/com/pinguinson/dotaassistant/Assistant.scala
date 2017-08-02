@@ -225,29 +225,44 @@ object Assistant extends JFXApp {
     buildIconGridAux(optionalGames)
   }
   /**
-    * Build a hyperlink to user's dotabuff
+    * Build a `HBox` with hyperlink to user's dotabuff
+    * and his MMR
     *
-    * @param info user for whom you need the hyperlink
-    * @return `Hyperlink` with user's nickname, solo MMR, and party MMR
+    * @param info user for whom you need the `HBox`
+    * @return `HBox` containing `Hyperlink` with user's nickname
+    * and optional `Label` with MMR information
     */
-  def buildLabel(info: UserInfo): Hyperlink = {
+  def buildLabel(info: UserInfo): HBox = {
     val link = s"https://www.dotabuff.com/players/${info.id}"
-    val hyperlink = new Hyperlink(info.pretty)
+    val hyperlink = new Hyperlink(info.nickname)
     hyperlink.setOnAction(handle(hostServices.showDocument(link)))
-    hyperlink
+    info.prettyMMR match {
+      case Some(mmr) =>
+        val emptyRegion = new Region()
+        HBox.setHgrow(emptyRegion, Priority.Always)
+        new HBox {
+          children = List(hyperlink, emptyRegion, Label(mmr))
+        }
+      case None =>
+        new HBox {
+          children = List(hyperlink)
+        }
+    }
   }
 
   /**
-    * Build a hyperlink to user's dotabuff
+    * Build a `HBox` with hyperlink to user's dotabuff
     *
     * @param userId user ID
-    * @return `Hyperlink` with user's ID
+    * @return `HBox` containing `Hyperlink` with user's ID
     */
-  def buildLabel(userId: String): Hyperlink = {
+  def buildLabel(userId: String): HBox = {
     val link = s"https://www.dotabuff.com/players/$userId"
     val hyperlink = new Hyperlink(s"Player #$userId")
     hyperlink.setOnAction(handle(hostServices.showDocument(link)))
-    hyperlink
+    new HBox {
+      children = List(hyperlink)
+    }
   }
 
   /**
