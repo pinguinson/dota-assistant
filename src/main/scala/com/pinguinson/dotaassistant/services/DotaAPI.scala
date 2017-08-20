@@ -246,8 +246,8 @@ class DotaAPI(apiKey: String) extends Statistics {
         val parsed = for {
           id <- cursor.downField("profile").get[Int]("account_id").map(_.toString)
           nickname <- cursor.downField("profile").get[String]("personaname")
-          solo = cursor.get[String]("solo_competitive_rank").toOption.map(_.toInt)
-          party = cursor.get[String]("competitive_rank").toOption.map(_.toInt)
+          solo = cursor.get[Int]("solo_competitive_rank").toOption
+          party = cursor.get[Int]("competitive_rank").toOption
         } yield UserInfo(id, nickname, solo, party)
 
         parsed.left.map {
