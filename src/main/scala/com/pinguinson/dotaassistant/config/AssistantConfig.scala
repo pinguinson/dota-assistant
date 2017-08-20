@@ -42,6 +42,8 @@ object AssistantConfig {
         "/AppData/Local/DotaAssistant/"
       case Linux =>
         "/.config/dota-assistant/"
+      case Mac =>
+        "/Library/Preferences/dota-assistant/"
       case _ =>
         ""
     }
